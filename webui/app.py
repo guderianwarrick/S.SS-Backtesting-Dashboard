@@ -281,29 +281,43 @@ async function refreshData() {
     const eq = await fetchJSON(`/api/equity_curve${query}`);
     if (equityChartInst) equityChartInst.destroy();
     const ctx = document.getElementById('equityChart').getContext('2d');
+    const datasets = [{
+      label: '组合净值',
+      data: eq.values,
+      borderColor: '#2563eb',
+      backgroundColor: getChartTheme().bg,
+      fill: true,
+      tension: 0.2,
+      pointRadius: 0,
+      borderWidth: 2,
+    }];
+    if (eq.qqq_values && eq.qqq_values.length > 0) {
+      datasets.push({
+        label: 'QQQ 基准',
+        data: eq.qqq_values,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.05)',
+        fill: false,
+        tension: 0.2,
+        pointRadius: 0,
+        borderWidth: 2,
+        borderDash: [5, 5],
+      });
+    }
     equityChartInst = new Chart(ctx, {
       type: 'line',
       data: {
         labels: eq.dates,
-        datasets: [{
-          label: '组合净值',
-          data: eq.values,
-          borderColor: '#2563eb',
-          backgroundColor: getChartTheme().bg,
-          fill: true,
-          tension: 0.2,
-          pointRadius: 0,
-          borderWidth: 2,
-        }]
+        datasets: datasets
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: { position: 'top', labels: { color: getChartTheme().legend, font: { size: 12 }, boxWidth: 15, padding: 12 } },
           tooltip: {
             callbacks: {
-              label: ctx => '$' + ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })
+              label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })
             }
           }
         },
@@ -489,9 +503,35 @@ def api_equity_curve(from_date: str = Query("", description="开始日期 YYYY-M
             q = q.filter(RebalanceEvent.date >= from_date)
         rows = q.group_by(RebalanceEvent.date).order_by(RebalanceEvent.date.asc()).all()
 
+    import json
+    from pathlib import Path
+    qqq_path = Path("data/price_cache/QQQ.json")
+    qqq_values = []
+    if qqq_path.exists():
+        qqq_data = json.loads(qqq_path.read_text())
+        qqq_dates = sorted(qqq_data.keys())
+        dates_list = [r[0] for r in rows]
+        values_list = [round(r[1], 2) for r in rows]
+        qqq_start = None
+        for d in qqq_dates:
+            if d >= dates_list[0]:
+                qqq_start = qqq_data[d].get("c") or qqq_data[d].get("o")
+                break
+        if qqq_start and qqq_start > 0:
+            for d in dates_list:
+                price = None
+                for qd in qqq_dates:
+                    if qd >= d:
+                        price = qqq_data[qd].get("c") or qqq_data[qd].get("o")
+                        break
+                if price:
+                    qqq_values.append(round(values_list[0] * (price / qqq_start), 2))
+                else:
+                    qqq_values.append(None)
     return {
-        "dates": [r[0] for r in rows],
-        "values": [round(r[1], 2) for r in rows],
+        "dates": dates_list if qqq_values else [r[0] for r in rows],
+        "values": values_list if qqq_values else [round(r[1], 2) for r in rows],
+        "qqq_values": qqq_values,
     }
 
 @app.get("/api/holdings")
