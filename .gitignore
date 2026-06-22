@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# Data
+data/price_cache/
+data/*.json
+data/*.db
+
+# Config / Keys
+*.key
+.desearch_key
+
+# Tool artifacts
+.workbuddy/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp / test scripts
+test_*.py
+debug_*.py
+fix_*.py
+fill_gaps.py
+find_selector.py
+merge_*.py
+normalize_data.py
+plot_timeline*.py
+
+# Scraped data
+data/desearch_full/
+data/*.json
+data/*.png
+data/*.db
+data/*.csv
+data/price_cache/
+tweet_timeline.png
+
+# Scraper temp
+scrape_*.py
+backfill_*.py
+test_*.py
+
+# Generated analysis
+*.html
