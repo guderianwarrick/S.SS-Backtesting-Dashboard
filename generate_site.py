@@ -308,29 +308,29 @@ const hDataFull = {h_items_full};
 // 渲染持仓列表（前 20 条）
 let hHtml = '';
 let idx = 0;
-for (const [sym, w] of Object.entries(hData)) {
+for (const [sym, w] of Object.entries(hData)) {{
   if (idx >= 20) break;
   idx++;
   hHtml += '<tr><td>'+idx+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(1)+'%</td><td>-</td></tr>';
-}
+}}
 document.getElementById('hb').innerHTML = hHtml;
 
 // 持仓详情弹窗
-function showHoldingsDetail() {
+function showHoldingsDetail() {{
   let rows = '';
   let i = 0;
-  for (const [sym, w] of Object.entries(hDataFull)) {
+  for (const [sym, w] of Object.entries(hDataFull)) {{
     i++;
     rows += '<tr><td>'+i+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(2)+'%</td><td>-</td></tr>';
-  }
+  }}
   const modal = document.getElementById('holdingsModal');
   document.getElementById('holdingsModalBody').innerHTML = rows;
   document.getElementById('holdingsModalCount').textContent = i;
   modal.style.display = 'flex';
-}
-function closeHoldingsModal() {
+}}
+function closeHoldingsModal() {{
   document.getElementById('holdingsModal').style.display = 'none';
-}
+}}
 
 const topSentiments = {top_sentiments};
 
