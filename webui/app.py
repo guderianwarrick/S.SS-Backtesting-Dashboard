@@ -553,7 +553,7 @@ def api_rebalances(from_date: str = Query("", description="开始日期 YYYY-MM-
 
 @app.get("/api/metrics")
 def api_metrics(from_date: str = Query("", description="开始日期 YYYY-MM-DD")):
-    """额外统计指标"""
+    """额外统计指标 + QQQ 对比"""
     with session_scope() as s:
         q = s.query(RebalanceEvent)
         if from_date:
@@ -561,46 +561,63 @@ def api_metrics(from_date: str = Query("", description="开始日期 YYYY-MM-DD"
         events = q.all()
 
         if not events:
-            return {"win_rate": 0, "avg_hold_days": 0, "max_drawdown": 0, "sharpe_approx": 0}
+            return {"win_rate": 0, "avg_hold_days": 0, "max_drawdown": 0, "sharpe_approx": 0, "qqq_excess": 0, "total_events": 0}
 
-        # Win rate: count positive weight changes vs negative
-        wins = sum(1 for e in events if e.new_weight > e.old_weight)
-        win_rate = wins / len(events) if events else 0
-
-        # Daily returns for approximation
+        # Daily portfolio values
         daily_values = defaultdict(list)
         for e in events:
             daily_values[e.date].append(e.portfolio_value)
         daily_avg = {d: sum(vs)/len(vs) for d, vs in daily_values.items()}
         sorted_dates = sorted(daily_avg.keys())
+        values = [daily_avg[d] for d in sorted_dates]
+
+        # Returns
         returns = []
-        for i in range(1, len(sorted_dates)):
-            prev = daily_avg[sorted_dates[i-1]]
-            curr = daily_avg[sorted_dates[i]]
+        for i in range(1, len(values)):
+            prev, curr = values[i-1], values[i]
             if prev > 0:
                 returns.append((curr - prev) / prev)
 
-        max_dd = 0
-        peak = 0
-        for d in sorted_dates:
-            v = daily_avg[d]
-            if v > peak:
-                peak = v
-            dd = (peak - v) / peak if peak > 0 else 0
-            if dd > max_dd:
-                max_dd = dd
-
+        # Sharpe
         sharpe = 0
         if len(returns) > 1:
             avg_r = sum(returns) / len(returns)
             std_r = (sum((r - avg_r) ** 2 for r in returns) / len(returns)) ** 0.5
             sharpe = (avg_r / std_r) * (252 ** 0.5) if std_r > 0 else 0
 
+        # Max drawdown
+        max_dd = 0
+        peak = values[0]
+        for v in values:
+            if v > peak: peak = v
+            dd = (peak - v) / peak if peak > 0 else 0
+            if dd > max_dd: max_dd = dd
+
+        # QQQ comparison
+        qqq_excess = 0
+        qqq_path = Path("data/price_cache/QQQ.json")
+        if qqq_path.exists() and sorted_dates:
+            import json
+            qqq_data = json.loads(qqq_path.read_text())
+            qqq_dates = sorted(qqq_data.keys())
+            qqq_start = qqq_end = None
+            for d in qqq_dates:
+                if d >= sorted_dates[0]:
+                    qqq_start = qqq_data[d].get("c") or qqq_data[d].get("o"); break
+            for d in reversed(qqq_dates):
+                if d <= sorted_dates[-1]:
+                    qqq_end = qqq_data[d].get("c") or qqq_data[d].get("o"); break
+            if qqq_start and qqq_end and qqq_start > 0:
+                port_ret = (values[-1] - values[0]) / values[0]
+                qqq_ret = (qqq_end - qqq_start) / qqq_start
+                qqq_excess = port_ret - qqq_ret
+
         return {
-            "win_rate": round(win_rate, 4),
-            "max_drawdown": round(max_dd, 4),
             "sharpe_approx": round(sharpe, 4),
+            "max_drawdown": round(max_dd, 4),
             "total_trading_days": len(sorted_dates),
+            "qqq_excess": round(qqq_excess, 4),
+            "total_events": len(events),
         }
 
 

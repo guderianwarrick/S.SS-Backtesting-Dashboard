@@ -27,6 +27,9 @@ python3 import_search_timeline.py aleabitoreddit || true
 # 运行完整管线（增量更新）
 python3 pipeline.py --step 2,3,4 || true
 
+# 更新 QQQ 基准数据
+python3 -c "from portfolio.price_fetcher import PriceFetcher; from datetime import date; PriceFetcher().extend_cache('QQQ', target_start=date(2025,6,1))" || true
+
 # 重新生成静态仪表盘
 python3 generate_site.py || true
 
