@@ -156,9 +156,50 @@ def gen():
         ).group_by(StockMention.symbol
         ).order_by(func.count(StockMention.id).desc()).limit(20).all()
         
+        # 构建持仓详情（含价格和涨跌）
+        import json as _json
+        holdings_list = []
+        cache_dir = Path("data/price_cache")
+        today_str = date.today().isoformat()
+        for sym, w in sorted(hData.items(), key=lambda x: -x[1]):
+            h = latest_holdings.get(sym)
+            price = h.price if h and h.price else None
+            change = None
+            # 从价格缓存取昨日收盘算涨跌
+            cache_path = cache_dir / f"{sym}.json"
+            if cache_path.exists():
+                try:
+                    pdata = _json.loads(cache_path.read_text())
+                    pkeys = sorted(pdata.keys())
+                    # 找最新一个价格
+                    latest_key = None
+                    for k in reversed(pkeys):
+                        if k <= today_str:
+                            latest_key = k
+                            break
+                    if latest_key:
+                        c = pdata[latest_key].get("c") or pdata[latest_key].get("o")
+                        if c:
+                            price = round(c, 2)
+                            # 找前一天的
+                            idx = pkeys.index(latest_key)
+                            if idx > 0:
+                                prev_c = pdata[pkeys[idx-1]].get("c") or pdata[pkeys[idx-1]].get("o")
+                                if prev_c and prev_c > 0:
+                                    change = round((c - prev_c) / prev_c * 100, 2)
+                except:
+                    pass
+            holdings_list.append({
+                "symbol": sym,
+                "weight": round(w * 100, 2),
+                "price": price,
+                "change": change
+            })
+        
     # ── 生成 HTML ──
     h_items = json.dumps(hData)
     h_items_full = json.dumps(dict(sorted(hData.items(), key=lambda x: -x[1])))
+    holdings_json = json.dumps(holdings_list)
     eq_dates_json = json.dumps(eq_dates)
     eq_values_json = json.dumps(eq_values)
     top_labels = json.dumps([r[0] for r in top_mentions])
@@ -229,11 +270,11 @@ tr:hover td{{background:var(--card-hover)}}
 <div class="grid-2">
 <div class="chart-box">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <h3 style="margin:0">🧩 当前持仓</h3>
-    <button class="theme-btn" onclick="showHoldingsDetail()" style="font-size:12px">📋 查看详情</button>
+    <h3 style="margin:0">🧩 前十大持仓</h3>
+    <button class="theme-btn" onclick="showHoldingsDetail()" style="font-size:12px">📋 查看全部持仓</button>
   </div>
   <div style="overflow-x:auto"><table><thead><tr>
-    <th>#</th><th>股票</th><th>权重</th><th>最新价</th>
+    <th>#</th><th>股票</th><th>权重</th><th>最新价</th><th>涨跌</th>
   </tr></thead><tbody id="hb"></tbody></table></div>
 </div>
 <div class="chart-box"><h3>🏆 最常提及 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
@@ -245,6 +286,19 @@ tr:hover td{{background:var(--card-hover)}}
 <th>股票</th><th>7天提及</th><th>情绪总分</th><th>上次情绪</th><th>上次提及</th><th>组合权重</th><th>最新价</th>
 </tr></thead><tbody id="mb"></tbody></table></div>
 </div></div>
+
+<!-- 持仓详情弹窗 -->
+<div id="holdingsModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:12px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow:auto;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;color:var(--h);font-size:18px">全部持仓 (<span id="holdingsModalCount">0</span>)</h3>
+      <button class="theme-btn" onclick="closeHoldingsModal()" style="font-size:16px">✕</button>
+    </div>
+    <table style="width:100%"><thead><tr>
+      <th>#</th><th>股票</th><th>权重</th><th>最新价</th><th>涨跌</th>
+    </tr></thead><tbody id="holdingsModalBody"></tbody></table>
+  </div>
+</div>
 
 <script>
 const TH = {{'light':{{g:'#e2e8f0',t:'#64748b',l:'#64748b'}},'dark':{{g:'#253a48',t:'#8899aa',l:'#b0c4d8'}}}}
@@ -303,30 +357,36 @@ const eqChart = new Chart(document.getElementById('eqChart'), {{
   }}}}}},scales:mkScale()}}
 }});
 
-const hData = {h_items};
-const hDataFull = {h_items_full};
-// 渲染持仓列表（前 20 条）
+const holdingsData = {holdings_json};
+
+// 渲染前十大持仓
 let hHtml = '';
-let idx = 0;
-for (const [sym, w] of Object.entries(hData)) {{
-  if (idx >= 20) break;
-  idx++;
-  hHtml += '<tr><td>'+idx+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(1)+'%</td><td>-</td></tr>';
+for (let i = 0; i < Math.min(10, holdingsData.length); i++) {{
+  const h = holdingsData[i];
+  const ch = h.change;
+  const chStr = ch !== null ? (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%' : '-';
+  const chCls = ch > 0 ? 'up' : (ch < 0 ? 'down' : '');
+  hHtml += '<tr><td>'+(i+1)+'</td><td><strong>'+h.symbol+'</strong></td><td>'+h.weight+'%</td>'+
+    '<td>'+(h.price ? '$'+h.price.toFixed(2) : '-')+'</td>'+
+    '<td class="'+chCls+'">'+chStr+'</td></tr>';
 }}
 document.getElementById('hb').innerHTML = hHtml;
 
-// 持仓详情弹窗
+// 全部持仓弹窗
 function showHoldingsDetail() {{
   let rows = '';
-  let i = 0;
-  for (const [sym, w] of Object.entries(hDataFull)) {{
-    i++;
-    rows += '<tr><td>'+i+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(2)+'%</td><td>-</td></tr>';
+  for (let i = 0; i < holdingsData.length; i++) {{
+    const h = holdingsData[i];
+    const ch = h.change;
+    const chStr = ch !== null ? (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%' : '-';
+    const chCls = ch > 0 ? 'up' : (ch < 0 ? 'down' : '');
+    rows += '<tr><td>'+(i+1)+'</td><td><strong>'+h.symbol+'</strong></td><td>'+h.weight+'%</td>'+
+      '<td>'+(h.price ? '$'+h.price.toFixed(2) : '-')+'</td>'+
+      '<td class="'+chCls+'">'+chStr+'</td></tr>';
   }}
-  const modal = document.getElementById('holdingsModal');
   document.getElementById('holdingsModalBody').innerHTML = rows;
-  document.getElementById('holdingsModalCount').textContent = i;
-  modal.style.display = 'flex';
+  document.getElementById('holdingsModalCount').textContent = holdingsData.length;
+  document.getElementById('holdingsModal').style.display = 'flex';
 }}
 function closeHoldingsModal() {{
   document.getElementById('holdingsModal').style.display = 'none';
