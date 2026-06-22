@@ -224,7 +224,7 @@ tr:hover td{{background:var(--card-hover)}}
 <div class="stat-card"><div class="l">涉及股票</div><div class="v">{total_symbols}</div></div>
 </div>
 
-<div class="chart-box"><h3>📈 组合净值曲线 vs QQQ 基准</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
+<div class="chart-box"><h3>📈 组合净值曲线</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
 <div class="grid-2">
 <div class="chart-box"><h3>🧩 当前持仓 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="hChart"></canvas></div></div>
 <div class="chart-box"><h3>🏆 最常提及 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
@@ -278,15 +278,20 @@ document.getElementById('mb').innerHTML = html;
 const tt = TH[curTheme];
 function mkScale() {{ return {{x:{{ticks:{{color:tt.t}},grid:{{color:tt.g}}}},y:{{ticks:{{color:tt.t}},grid:{{color:tt.g}}}}}} }}
 
+const qqqCurve = {qqq_curve_json};
+const initialVal = {initial:.0f};
+
 const eqChart = new Chart(document.getElementById('eqChart'), {{
   type:'line',data:{{
     labels:{eq_dates_json},
     datasets:[
       {{label:'组合净值',data:{eq_values_json},borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,tension:0.2,pointRadius:0,borderWidth:2}},
-      {{label:'QQQ 基准',data:{qqq_curve_json},borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.05)',fill:false,tension:0.2,pointRadius:0,borderWidth:2,borderDash:[5,5]}}
+      {{label:'QQQ 基准',data:qqqCurve,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.05)',fill:false,tension:0.2,pointRadius:0,borderWidth:2,borderDash:[5,5]}}
     ]
   }},
-  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{position:'top',labels:{{color:tt.l,font:{{size:12}},boxWidth:15,padding:12}}}},tooltip:{{callbacks:{{label:ctx=>ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString()}}}}}},scales:mkScale()}}
+  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{position:'top',labels:{{color:tt.l,font:{{size:12}},boxWidth:15,padding:12}}}},tooltip:{{callbacks:{{
+    label:ctx=>{{const v=ctx.parsed.y;const r=(v/initialVal-1)*100;return ctx.dataset.label+': $'+v.toLocaleString()+' ('+(r>=0?'+':'')+r.toFixed(2)+'%)'}}
+  }}}}}},scales:mkScale()}}
 }});
 
 const hData = {h_items};

@@ -317,7 +317,12 @@ async function refreshData() {
           legend: { position: 'top', labels: { color: getChartTheme().legend, font: { size: 12 }, boxWidth: 15, padding: 12 } },
           tooltip: {
             callbacks: {
-              label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2 })
+              label: function(ctx) {
+                const v = ctx.parsed.y;
+                const firstVal = ctx.dataset.data[0];
+                const r = (v / firstVal - 1) * 100;
+                return ctx.dataset.label + ': $' + v.toLocaleString('en-US', {minimumFractionDigits:2}) + ' (' + (r >= 0 ? '+' : '') + r.toFixed(2) + '%)';
+              }
             }
           }
         },
