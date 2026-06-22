@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
 from storage.models import init_db, session_scope, StockMention
+import config as project_config
 from portfolio.engine import PortfolioEngine
 from portfolio.price_fetcher import PriceFetcher
 
@@ -53,7 +54,7 @@ def main():
     engine = PortfolioEngine(
         username="aleabitoreddit",
         author_id="aleabitoreddit",
-        initial_cash=100000.0,
+        initial_cash=project_config.PORTFOLIO_INITIAL_CASH,
         min_symbols=20,
     )
     
@@ -64,7 +65,7 @@ def main():
     
     # 输出结果
     logger.info(f"✅ 回测完成:")
-    logger.info(f"   初始资金: ${100000:,.2f}")
+    logger.info(f"   初始资金: ${project_config.PORTFOLIO_INITIAL_CASH:,.2f}")
     logger.info(f"   最终价值: ${result.get('final_value', 0):,.2f}")
     logger.info(f"   累计收益: {result.get('cumulative_return', 0):.2%}")
     logger.info(f"   调仓次数: {result.get('total_events', 0)}")

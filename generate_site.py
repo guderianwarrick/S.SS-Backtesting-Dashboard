@@ -84,15 +84,21 @@ def gen():
                 "last_score": lm.get("score", 0)
             })
         
-        # 常交易股票
-        top_syms = s.query(RebalanceEvent.symbol, func.count(RebalanceEvent.id).label("cnt")).group_by(RebalanceEvent.symbol).order_by(func.count(RebalanceEvent.id).desc()).limit(20).all()
+        # 最常提及 Top20（从 StockMention 取提及次数 + 平均情绪分）
+        top_mentions = s.query(
+            StockMention.symbol,
+            func.count(StockMention.id).label("cnt"),
+            func.avg(StockMention.sentiment_score).label("avg_score")
+        ).group_by(StockMention.symbol
+        ).order_by(func.count(StockMention.id).desc()).limit(20).all()
         
     # ── 生成 HTML ──
     h_items = json.dumps(hData)
     eq_dates_json = json.dumps(eq_dates)
     eq_values_json = json.dumps(eq_values)
-    top_labels = json.dumps([r[0] for r in top_syms])
-    top_values = json.dumps([r[1] for r in top_syms])
+    top_labels = json.dumps([r[0] for r in top_mentions])
+    top_values = json.dumps([r[1] for r in top_mentions])
+    top_sentiments = json.dumps([round(r[2], 3) if r[2] else 0 for r in top_mentions])
     mentions_json = json.dumps(mentions)
     updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
@@ -154,7 +160,7 @@ tr:hover td{{background:var(--card-hover)}}
 <div class="chart-box"><h3>📈 组合净值曲线</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
 <div class="grid-2">
 <div class="chart-box"><h3>🧩 当前持仓 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="hChart"></canvas></div></div>
-<div class="chart-box"><h3>🏆 最常交易 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
+<div class="chart-box"><h3>🏆 最常提及 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
 </div>
 
 <div class="chart-box"><h3>📌 近 7 天提及股票</h3>
@@ -217,10 +223,12 @@ const hChart = new Chart(document.getElementById('hChart'), {{
   options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{position:'right',labels:{{color:tt.l,font:{{size:11}}}}}},tooltip:{{callbacks:{{label:ctx=>ctx.label+': '+ctx.parsed.toFixed(2)+'%'}}}}}}}}
 }});
 
+const topSentiments = {top_sentiments};
+
 const topChart = new Chart(document.getElementById('topChart'), {{
   type:'bar',
-  data:{{labels:{top_labels},datasets:[{{data:{top_values},backgroundColor:'#2563eb',borderRadius:6,borderSkipped:false}}]}},
-  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:ctx=>ctx.parsed.y+' 次调仓'}}}}}},scales:{{x:{{ticks:{{color:tt.t,font:{{size:10}}}},grid:{{display:false}}}},y:{{ticks:{{color:tt.t,font:{{size:11}}}},grid:{{color:tt.g}}}}}}}}
+  data:{{labels:{top_labels},datasets:[{{data:{top_values},backgroundColor:topSentiments.map(s=>s>0?'rgba(22,163,74,0.7)':'rgba(220,38,38,0.7)'),borderRadius:6,borderSkipped:false}}]}},
+  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:ctx=>ctx.parsed.y+' 次提及 | 均分 '+topSentiments[ctx.dataIndex].toFixed(3)}}}}}},scales:{{x:{{ticks:{{color:tt.t,font:{{size:10}}}},grid:{{display:false}}}},y:{{ticks:{{color:tt.t,font:{{size:11}}}},grid:{{color:tt.g}}}}}}}}
 }});
 </script></body></html>'''
     
