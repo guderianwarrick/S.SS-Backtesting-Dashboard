@@ -158,6 +158,7 @@ def gen():
         
     # ── 生成 HTML ──
     h_items = json.dumps(hData)
+    h_items_full = json.dumps(dict(sorted(hData.items(), key=lambda x: -x[1])))
     eq_dates_json = json.dumps(eq_dates)
     eq_values_json = json.dumps(eq_values)
     top_labels = json.dumps([r[0] for r in top_mentions])
@@ -172,7 +173,7 @@ def gen():
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>情绪回测看板 - S.SS</title>
+<title>S100指数回测看板</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {{ --bg:#f0f4f8; --card:#fff; --card-hover:#f8fafc; --text:#1e293b; --text2:#64748b; --h:#0f172a; --border:#e2e8f0; --green:#16a34a; --red:#dc2626; --grid:#e2e8f0; --blue:#2563eb; }}
@@ -207,7 +208,7 @@ tr:hover td{{background:var(--card-hover)}}
 .note{{color:var(--text2);font-size:12px;margin-top:8px}}
 </style></head>
 <body><div class="container">
-<div class="header-bar"><div><h1>📊 情绪回测看板</h1>
+<div class="header-bar"><div><h1>📊 S100指数回测看板</h1>
 <div class="subtitle">根据推特博主 <a href="https://x.com/aleabitoreddit" target="_blank" style="color:var(--blue)">@aleabitoreddit</a> 的推文生成的虚拟投资组合</div>
 <div class="update-time">更新于 {updated_at}</div></div>
 <div style="display:flex;gap:8px;align-items:center">
@@ -226,7 +227,15 @@ tr:hover td{{background:var(--card-hover)}}
 
 <div class="chart-box"><h3>📈 组合净值曲线</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
 <div class="grid-2">
-<div class="chart-box"><h3>🧩 当前持仓 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="hChart"></canvas></div></div>
+<div class="chart-box">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h3 style="margin:0">🧩 当前持仓</h3>
+    <button class="theme-btn" onclick="showHoldingsDetail()" style="font-size:12px">📋 查看详情</button>
+  </div>
+  <div style="overflow-x:auto"><table><thead><tr>
+    <th>#</th><th>股票</th><th>权重</th><th>最新价</th>
+  </tr></thead><tbody id="hb"></tbody></table></div>
+</div>
 <div class="chart-box"><h3>🏆 最常提及 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
 </div>
 
@@ -295,11 +304,33 @@ const eqChart = new Chart(document.getElementById('eqChart'), {{
 }});
 
 const hData = {h_items};
-const hChart = new Chart(document.getElementById('hChart'), {{
-  type:'doughnut',
-  data:{{labels:Object.keys(hData),datasets:[{{data:Object.values(hData).map(v=>+(v*100).toFixed(2)),backgroundColor:['#2563eb','#4ade80','#f59e0b','#f87171','#a78bfa','#34d399','#fb923c','#60a5fa','#f472b6','#2dd4bf'],borderWidth:0}}]}},
-  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{position:'right',labels:{{color:tt.l,font:{{size:11}}}}}},tooltip:{{callbacks:{{label:ctx=>ctx.label+': '+ctx.parsed.toFixed(2)+'%'}}}}}}}}
-}});
+const hDataFull = {h_items_full};
+// 渲染持仓列表（前 20 条）
+let hHtml = '';
+let idx = 0;
+for (const [sym, w] of Object.entries(hData)) {
+  if (idx >= 20) break;
+  idx++;
+  hHtml += '<tr><td>'+idx+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(1)+'%</td><td>-</td></tr>';
+}
+document.getElementById('hb').innerHTML = hHtml;
+
+// 持仓详情弹窗
+function showHoldingsDetail() {
+  let rows = '';
+  let i = 0;
+  for (const [sym, w] of Object.entries(hDataFull)) {
+    i++;
+    rows += '<tr><td>'+i+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(2)+'%</td><td>-</td></tr>';
+  }
+  const modal = document.getElementById('holdingsModal');
+  document.getElementById('holdingsModalBody').innerHTML = rows;
+  document.getElementById('holdingsModalCount').textContent = i;
+  modal.style.display = 'flex';
+}
+function closeHoldingsModal() {
+  document.getElementById('holdingsModal').style.display = 'none';
+}
 
 const topSentiments = {top_sentiments};
 

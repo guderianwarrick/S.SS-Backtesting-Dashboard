@@ -54,4 +54,5 @@ PORTFOLIO_INITIAL_CASH = 1_000_000.0      # 初始资金（$1,000,000）
 PORTFOLIO_START_DATE = "2025-09-01"        # 回测起始日期（覆盖最早推文）
 PORTFOLIO_MIN_STOCKS = 1                   # 最少持仓数
 PORTFOLIO_MAX_WEIGHT = 0.40                # 单只股票最大权重（防止过度集中）
-SCORE_HALF_LIFE_DAYS = 14                  # 情绪分指数衰减半衰期（天）
+SCORE_HALF_LIFE_DAYS = 7                   # 情绪分指数衰减半衰期（天）改为 7 天加速移仓
+PORTFOLIO_TOP_N = 100                      # 只保留情绪分前 N 名的股票

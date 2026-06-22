@@ -243,13 +243,19 @@ class PortfolioEngine:
         情绪分 → 持仓权重。
         规则：
           1. 过滤负分股票（看空不持仓）
-          2. 剩余按分值等比分配
-          3. 单只股票权重不超过 PORTFOLIO_MAX_WEIGHT（超限裁剪）
-          4. 如果全部为负 → 空仓（100% 现金）
+          2. 只保留衰减后情绪分前 N 名（PORTFOLIO_TOP_N）
+          3. 剩余按分值等比分配
+          4. 单只股票权重不超过 PORTFOLIO_MAX_WEIGHT（超限裁剪）
+          5. 如果全部为负 → 空仓（100% 现金）
         """
         positive = {k: v for k, v in scores.items() if v > 0}
         if not positive:
             return {}
+        
+        # 只保留前 N 名
+        top_n = getattr(config, "PORTFOLIO_TOP_N", 100)
+        if len(positive) > top_n:
+            positive = dict(sorted(positive.items(), key=lambda x: -x[1])[:top_n])
 
         max_w = config.PORTFOLIO_MAX_WEIGHT
         total = sum(positive.values())

@@ -27,7 +27,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock Sentiment 回测看板</title>
+<title>S100指数回测看板</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
@@ -126,7 +126,7 @@ select, .theme-btn { background: var(--select-bg); color: var(--select-text); bo
 <div class="container">
   <div class="header-bar">
     <div>
-      <h1>📊 情绪回测看板</h1>
+      <h1>📊 S100指数回测看板</h1>
       <div class="subtitle">@aleabitoreddit · 虚拟组合回测 · <span id="dateRange">加载中...</span></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
