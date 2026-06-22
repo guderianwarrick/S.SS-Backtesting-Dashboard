@@ -158,15 +158,31 @@ select, .theme-btn { background: var(--select-bg); color: var(--select-text); bo
     <div class="chart-wrapper"><canvas id="equityChart"></canvas></div>
   </div>
 
-  <!-- Holdings + Top Symbols -->
+  <!-- Holdings Table + Top Mentions -->
   <div class="grid-2">
     <div class="chart-container">
-      <h3>🧩 当前持仓分布</h3>
-      <div class="chart-wrapper" style="height:300px"><canvas id="holdingsChart"></canvas></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:15px;color:var(--text-secondary)">🧩 前十大持仓</h3>
+        <button class="theme-btn" onclick="fetchAndShowHoldings()" style="font-size:12px">📋 查看全部持仓</button>
+      </div>
+      <div style="overflow-x:auto" id="holdingsTable"><div class="loading">加载中...</div></div>
     </div>
     <div class="chart-container">
-      <h3>🏆 最常交易股票</h3>
+      <h3>🏆 最常提及 Top 20</h3>
       <div class="chart-wrapper" style="height:300px"><canvas id="topSymbolsChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Holdings Modal -->
+  <div id="holdingsModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--bg-card);border-radius:12px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow:auto;border:1px solid var(--border-color)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0;color:var(--text-heading);font-size:18px">全部持仓 (<span id="holdingsModalCount">0</span>)</h3>
+        <button class="theme-btn" onclick="closeHoldingsModal()" style="font-size:16px">✕</button>
+      </div>
+      <table style="width:100%"><thead><tr>
+        <th>#</th><th>股票</th><th>权重</th><th>最新价</th><th>涨跌</th>
+      </tr></thead><tbody id="holdingsModalBody"></tbody></table>
     </div>
   </div>
 
@@ -194,7 +210,6 @@ function toggleTheme() {
   document.getElementById('themeToggle').textContent = currentTheme === 'dark' ? '🌙' : '☀️';
   // Update chart colors on theme switch
   if (equityChartInst) updateChartTheme(equityChartInst);
-  if (holdingsChartInst) updateChartTheme(holdingsChartInst);
   if (topSymbolsChartInst) updateChartTheme(topSymbolsChartInst);
 }
 
@@ -224,7 +239,6 @@ function updateChartTheme(chart) {
 }
 
 let equityChartInst = null;
-let holdingsChartInst = null;
 let topSymbolsChartInst = null;
 let currentPage = 1;
 let pageSize = 20;
@@ -336,26 +350,18 @@ async function refreshData() {
 
   try {
     const h = await fetchJSON(`/api/holdings${query}`);
-    if (holdingsChartInst) holdingsChartInst.destroy();
     const entries = Object.entries(h.holdings || {});
     entries.sort((a, b) => b[1] - a[1]);
-    const labels = entries.slice(0, 20).map(e => e[0]);
-    const values = entries.slice(0, 20).map(e => +(e[1] * 100).toFixed(2));
-    const colors = ['#2563eb','#4ade80','#f59e0b','#f87171','#a78bfa','#34d399','#fb923c','#60a5fa','#f472b6','#2dd4bf'];
-    const ctx2 = document.getElementById('holdingsChart').getContext('2d');
-    holdingsChartInst = new Chart(ctx2, {
-      type: 'doughnut',
-      data: {
-        labels, datasets: [{ data: values, backgroundColor: colors.concat(Array(20).fill('#3a5568')), borderWidth: 0 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'right', labels: { color: getChartTheme().legend, font: { size: 11 }, padding: 8 } },
-          tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed.toFixed(2) + '%' } }
-        }
-      }
-    });
+    // 渲染前十大持仓
+    let hHtml = '<table><thead><tr><th>#</th><th>股票</th><th>权重</th><th>最新价</th><th>涨跌</th></tr></thead><tbody>';
+    for (let i = 0; i < Math.min(10, entries.length); i++) {
+      const [sym, w] = entries[i];
+      hHtml += '<tr><td>'+(i+1)+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(1)+'%</td><td>-</td><td>-</td></tr>';
+    }
+    hHtml += '</tbody></table>';
+    document.getElementById('holdingsTable').innerHTML = hHtml;
+    // 保存全量数据供弹窗用
+    window._allHoldings = entries;
   } catch(e) { console.error('Holdings error:', e); }
 
   try {
@@ -443,6 +449,21 @@ function changePage(delta) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   currentPage = Math.max(1, Math.min(pages, currentPage + delta));
   renderTable();
+}
+
+function fetchAndShowHoldings() {
+  const entries = window._allHoldings || [];
+  let rows = '';
+  for (let i = 0; i < entries.length; i++) {
+    const [sym, w] = entries[i];
+    rows += '<tr><td>'+(i+1)+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(2)+'%</td><td>-</td><td>-</td></tr>';
+  }
+  document.getElementById('holdingsModalBody').innerHTML = rows;
+  document.getElementById('holdingsModalCount').textContent = entries.length;
+  document.getElementById('holdingsModal').style.display = 'flex';
+}
+function closeHoldingsModal() {
+  document.getElementById('holdingsModal').style.display = 'none';
 }
 
 document.getElementById('datePreset').addEventListener('change', refreshData);
