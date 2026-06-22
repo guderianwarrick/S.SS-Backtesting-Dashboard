@@ -5,8 +5,15 @@ __pycache__/
 venv/
 .env
 
-# Data files (keep only index.html at root)
-data/
+# Data files (generated at runtime)
+data/price_cache/
+data/*.db
+data/*.json
+data/*.png
+data/*.csv
+data/*.log
+data/*.bak
+tweet_timeline.png
 
 # Config / Keys
 *.key
@@ -19,28 +26,5 @@ data/
 .DS_Store
 Thumbs.db
 
-# Test / temp scripts
-test_*.py
-debug_*.py
-fix_*.py
-fill_gaps.py
-find_selector.py
-merge_*.py
-normalize_data.py
-plot_timeline*.py
-scrape_*.py
-backfill_*.py
-send_phone_code.py
-batch_fetch_prices.py
-main.py
-monitor.py
-run_*.py
-import_*.py
-send_*.py
-
 # Project notes
 TASK.md
-pipeline_design.md
-data_cleaning_report.md
-scraper/
-tweet_timeline.png
