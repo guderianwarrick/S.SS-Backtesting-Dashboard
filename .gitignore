@@ -46,4 +46,4 @@ backfill_*.py
 test_*.py
 
 # Generated analysis
-*.html
+# *.html  # 移除：需要提交 index.html 给 EdgeOne
