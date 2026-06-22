@@ -1,12 +1,12 @@
 """从数据库生成静态 dashboard HTML（Embedded 模式，所有数据嵌入页面）"""
 import json, sys
 from pathlib import Path
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from storage.models import init_db, session_scope, RebalanceEvent, StockMention, Tweet
-from sqlalchemy import func
+from sqlalchemy import func, desc
 
 init_db()
 
@@ -17,6 +17,8 @@ def gen():
         if not last_date:
             print("No data")
             return
+        
+        today_str = date.today().isoformat()
         
         events = s.query(RebalanceEvent).filter(RebalanceEvent.date == last_date).order_by(RebalanceEvent.new_weight.desc()).all()
         
@@ -35,7 +37,7 @@ def gen():
         
         # 最近 7 天提及（从 StockMention 取）
         seven_days_ago = date.today() - timedelta(days=7)
-        recent = s.query(
+        recent_raw = s.query(
             StockMention.symbol,
             func.count(StockMention.id).label("cnt"),
             func.sum(StockMention.sentiment_score).label("total_score")
@@ -44,19 +46,42 @@ def gen():
         ).group_by(StockMention.symbol
         ).order_by(func.count(StockMention.id).desc()).limit(50).all()
         
+        # 获取每个 symbol 最近一次提及的时间 + 对应情绪分
+        # 子查询：每个 symbol 最新的 tweet_id
+        latest_mention = {}
+        for sym, _, _ in recent_raw:
+            row = s.query(
+                StockMention.symbol,
+                StockMention.sentiment_score,
+                Tweet.created_at
+            ).join(Tweet, StockMention.tweet_id == Tweet.id
+            ).filter(
+                StockMention.symbol == sym,
+                Tweet.created_at >= seven_days_ago.isoformat()
+            ).order_by(desc(Tweet.created_at)).first()
+            if row:
+                latest_mention[sym] = {
+                    "time": row.created_at.isoformat() if hasattr(row.created_at, 'isoformat') else str(row.created_at),
+                    "score": round(row.sentiment_score, 3)
+                }
+        
         # 从 rebalance 获取真实权重和价格
         latest_holdings = {h.symbol: h for h in s.query(RebalanceEvent).filter(RebalanceEvent.date == last_date).all()}
         
         mentions = []
-        for sym, cnt, score in recent:
+        for sym, cnt, score in recent_raw:
             h = latest_holdings.get(sym)
             weight = h.new_weight if h else 0
             price = h.price if h else None
+            lm = latest_mention.get(sym, {})
             mentions.append({
-                "symbol": sym, "count": cnt,
+                "symbol": sym,
+                "count_7d": cnt,
                 "total_score": round(score, 3),
                 "weight": round(weight * 100, 1) if weight else 0,
-                "price": price
+                "price": price,
+                "last_time": lm.get("time", ""),
+                "last_score": lm.get("score", 0)
             })
         
         # 常交易股票
@@ -69,6 +94,7 @@ def gen():
     top_labels = json.dumps([r[0] for r in top_syms])
     top_values = json.dumps([r[1] for r in top_syms])
     mentions_json = json.dumps(mentions)
+    updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     html = f'''<!DOCTYPE html>
 <html lang="zh-CN">
@@ -78,13 +104,14 @@ def gen():
 <title>情绪回测看板 - S.SS</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-:root {{ --bg:#0f1923; --card:#1a2d3a; --card-hover:#1e3342; --text:#e0e6ed; --text2:#8899aa; --h:#fff; --border:#253a48; --green:#4ade80; --red:#f87171; --blue:#2563eb; --grid:#253a48; }}
-[data-theme="light"] {{ --bg:#f0f4f8; --card:#fff; --card-hover:#f8fafc; --text:#1e293b; --text2:#64748b; --h:#0f172a; --border:#e2e8f0; --green:#16a34a; --red:#dc2626; --grid:#e2e8f0; }}
+:root {{ --bg:#f0f4f8; --card:#fff; --card-hover:#f8fafc; --text:#1e293b; --text2:#64748b; --h:#0f172a; --border:#e2e8f0; --green:#16a34a; --red:#dc2626; --grid:#e2e8f0; --blue:#2563eb; }}
+[data-theme="dark"] {{ --bg:#0f1923; --card:#1a2d3a; --card-hover:#1e3342; --text:#e0e6ed; --text2:#8899aa; --h:#fff; --border:#253a48; --green:#4ade80; --red:#f87171; --grid:#253a48; }}
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:20px}}
 .container{{max-width:1400px;margin:0 auto}}
 h1{{font-size:24px;color:var(--h);margin-bottom:6px}}
-.subtitle{{color:var(--text2);font-size:14px;margin-bottom:24px}}
+.subtitle{{color:var(--text2);font-size:14px;margin-bottom:4px}}
+.update-time{{color:var(--text2);font-size:12px;margin-bottom:24px}}
 .header-bar{{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:24px}}
 .stats-row{{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}}
 .stat-card{{background:var(--card);border-radius:10px;padding:16px 20px;border:1px solid var(--border)}}
@@ -97,21 +124,23 @@ h1{{font-size:24px;color:var(--h);margin-bottom:6px}}
 .grid-2{{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}}
 @media(max-width:900px){{.grid-2{{grid-template-columns:1fr}}}}
 table{{width:100%;border-collapse:collapse;font-size:13px}}
-th{{text-align:left;padding:8px 10px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;text-transform:uppercase}}
-td{{padding:8px 10px;border-bottom:1px solid var(--border)}}
+th{{text-align:left;padding:8px 10px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;text-transform:uppercase;white-space:nowrap}}
+td{{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}}
 tr:hover td{{background:var(--card-hover)}}
 .theme-btn{{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:15px;line-height:1}}
 .tag{{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}}
-.tag.bullish{{background:#14522b;color:var(--green)}} .tag.bearish{{background:#521414;color:var(--red)}} .tag.neutral{{background:#2a3a4a;color:#94a3b8}}
-.up{{color:var(--green)}} .down{{color:var(--red)}}
-[data-theme="light"] .tag.bullish{{background:#dcfce7;color:var(--green)}}
-[data-theme="light"] .tag.bearish{{background:#fef2f2;color:var(--red)}}
-[data-theme="light"] .tag.neutral{{background:#f1f5f9;color:var(--text2)}}
+.tag.bullish{{background:#dcfce7;color:var(--green)}} .tag.bearish{{background:#fef2f2;color:var(--red)}} .tag.neutral{{background:#f1f5f9;color:var(--text2)}}
+[data-theme="dark"] .tag.bullish{{background:#14522b;color:var(--green)}}
+[data-theme="dark"] .tag.bearish{{background:#521414;color:var(--red)}}
+[data-theme="dark"] .tag.neutral{{background:#2a3a4a;color:#94a3b8}}
+.note{{color:var(--text2);font-size:12px;margin-top:8px}}
 </style></head>
 <body><div class="container">
-<div class="header-bar"><div><h1>📊 情绪回测看板</h1><div class="subtitle">@aleabitoreddit · 虚拟组合 · {last_date}</div></div>
+<div class="header-bar"><div><h1>📊 情绪回测看板</h1>
+<div class="subtitle">根据推特博主 <a href="https://x.com/aleabitoreddit" target="_blank" style="color:var(--blue)">@aleabitoreddit</a> 的推文生成的虚拟投资组合</div>
+<div class="update-time">更新于 {updated_at}</div></div>
 <div style="display:flex;gap:8px;align-items:center">
-<button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+<button class="theme-btn" onclick="toggleTheme()" id="themeToggle">☀️</button>
 </div></div>
 
 <div class="stats-row">
@@ -128,18 +157,19 @@ tr:hover td{{background:var(--card-hover)}}
 <div class="chart-box"><h3>🏆 最常交易 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
 </div>
 
-<div class="chart-box"><h3>📌 最近 7 天提及股票</h3>
-<div style="overflow-x:auto"><table><thead><tr>
-<th>股票</th><th>提及</th><th>情绪分</th><th>组合权重</th><th>最新价</th>
+<div class="chart-box"><h3>📌 近 7 天提及股票</h3>
+<div class="note">提及次数为近 7 天累计，情绪分为同期所有提及的情绪总分（正=看多，负=看空）</div>
+<div style="overflow-x:auto;margin-top:8px"><table><thead><tr>
+<th>股票</th><th>7天提及</th><th>情绪总分</th><th>上次情绪</th><th>上次提及</th><th>组合权重</th><th>最新价</th>
 </tr></thead><tbody id="mb"></tbody></table></div>
 </div></div>
 
 <script>
-const TH = {{'dark':{{g:'#253a48',t:'#8899aa',l:'#b0c4d8'}},'light':{{g:'#e2e8f0',t:'#64748b',l:'#64748b'}}}}
+const TH = {{'light':{{g:'#e2e8f0',t:'#64748b',l:'#64748b'}},'dark':{{g:'#253a48',t:'#8899aa',l:'#b0c4d8'}}}}
 
 function toggleTheme() {{
   const d = document.documentElement;
-  const cur = d.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  const cur = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   d.setAttribute('data-theme', cur);
   localStorage.setItem('theme', cur);
   document.getElementById('themeToggle').textContent = cur === 'dark' ? '🌙' : '☀️';
@@ -151,7 +181,7 @@ function toggleTheme() {{
     c.update();
   }});
 }}
-const curTheme = localStorage.getItem('theme') || 'dark';
+const curTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', curTheme);
 document.getElementById('themeToggle').textContent = curTheme === 'dark' ? '🌙' : '☀️';
 
@@ -160,9 +190,15 @@ const MENTIONS = {mentions_json};
 let html = '';
 for (const r of MENTIONS) {{
   const tag = r.total_score > 0.5 ? 'bullish' : (r.total_score < -0.3 ? 'bearish' : 'neutral');
-  html += '<tr><td><strong>'+r.symbol+'</strong></td><td>'+r.count+'次</td>'+
+  const lastTag = r.last_score > 0.5 ? 'bullish' : (r.last_score < -0.3 ? 'bearish' : 'neutral');
+  const lastTime = r.last_time ? r.last_time.slice(0,19).replace('T',' ') : '-';
+  html += '<tr><td><strong>'+r.symbol+'</strong></td>'+
+    '<td>'+r.count_7d+'次</td>'+
     '<td><span class="tag '+tag+'">'+(r.total_score>=0?'+':'')+r.total_score.toFixed(3)+'</span></td>'+
-    '<td>'+r.weight+'%</td><td>'+(r.price?'$'+r.price.toFixed(2):'-')+'</td></tr>';
+    '<td><span class="tag '+lastTag+'">'+(r.last_score>=0?'+':'')+r.last_score.toFixed(3)+'</span></td>'+
+    '<td style="font-size:12px">'+lastTime+'</td>'+
+    '<td>'+r.weight+'%</td>'+
+    '<td>'+(r.price?'$'+r.price.toFixed(2):'-')+'</td></tr>';
 }}
 document.getElementById('mb').innerHTML = html;
 
@@ -189,7 +225,7 @@ const topChart = new Chart(document.getElementById('topChart'), {{
 </script></body></html>'''
     
     Path("index.html").write_text(html, encoding="utf-8")
-    print(f"✅ index.html generated: {len(html)} bytes, {len(mentions)} mentions, {len(hData)} holdings, {len(equity_rows)} trading days")
+    print(f"✅ index.html generated: {len(html)} bytes, {len(mentions)} mentions")
 
 if __name__ == "__main__":
     gen()

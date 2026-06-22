@@ -5,10 +5,8 @@ __pycache__/
 venv/
 .env
 
-# Data
-data/price_cache/
-data/*.json
-data/*.db
+# Data files (keep only index.html at root)
+data/
 
 # Config / Keys
 *.key
@@ -21,7 +19,7 @@ data/*.db
 .DS_Store
 Thumbs.db
 
-# Temp / test scripts
+# Test / temp scripts
 test_*.py
 debug_*.py
 fix_*.py
@@ -30,42 +28,19 @@ find_selector.py
 merge_*.py
 normalize_data.py
 plot_timeline*.py
-
-# Scraped data
-data/desearch_full/
-data/*.json
-data/*.png
-data/*.db
-data/*.csv
-data/price_cache/
-tweet_timeline.png
-
-# Scraper temp
 scrape_*.py
 backfill_*.py
-test_*.py
-
-# Generated analysis
-# *.html  # 移除：需要提交 index.html 给 EdgeOne
-
-# Temp project files
-TASK.md
-pipeline_design.md
-data_cleaning_report.md
+send_phone_code.py
 batch_fetch_prices.py
 main.py
 monitor.py
-run_equity_curve.py
-run_minimal.py
-run_pipeline.py
-run_pipeline_audit.py
-run_snapshot.py
-run_warmup_*.py
+run_*.py
 import_*.py
-merge_*.py
-normalize_data.py
-plot_timeline*.py
-scrape_*.py
-send_phone_code.py
-backfill_*.py
+send_*.py
+
+# Project notes
+TASK.md
+pipeline_design.md
+data_cleaning_report.md
 scraper/
+tweet_timeline.png

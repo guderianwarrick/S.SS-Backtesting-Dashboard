@@ -6,13 +6,14 @@
 <title>情绪回测看板 - S.SS</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-:root { --bg:#0f1923; --card:#1a2d3a; --card-hover:#1e3342; --text:#e0e6ed; --text2:#8899aa; --h:#fff; --border:#253a48; --green:#4ade80; --red:#f87171; --blue:#2563eb; --grid:#253a48; }
-[data-theme="light"] { --bg:#f0f4f8; --card:#fff; --card-hover:#f8fafc; --text:#1e293b; --text2:#64748b; --h:#0f172a; --border:#e2e8f0; --green:#16a34a; --red:#dc2626; --grid:#e2e8f0; }
+:root { --bg:#f0f4f8; --card:#fff; --card-hover:#f8fafc; --text:#1e293b; --text2:#64748b; --h:#0f172a; --border:#e2e8f0; --green:#16a34a; --red:#dc2626; --grid:#e2e8f0; --blue:#2563eb; }
+[data-theme="dark"] { --bg:#0f1923; --card:#1a2d3a; --card-hover:#1e3342; --text:#e0e6ed; --text2:#8899aa; --h:#fff; --border:#253a48; --green:#4ade80; --red:#f87171; --grid:#253a48; }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:20px}
 .container{max-width:1400px;margin:0 auto}
 h1{font-size:24px;color:var(--h);margin-bottom:6px}
-.subtitle{color:var(--text2);font-size:14px;margin-bottom:24px}
+.subtitle{color:var(--text2);font-size:14px;margin-bottom:4px}
+.update-time{color:var(--text2);font-size:12px;margin-bottom:24px}
 .header-bar{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:24px}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}
 .stat-card{background:var(--card);border-radius:10px;padding:16px 20px;border:1px solid var(--border)}
@@ -25,21 +26,23 @@ h1{font-size:24px;color:var(--h);margin-bottom:6px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
 @media(max-width:900px){.grid-2{grid-template-columns:1fr}}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px 10px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;text-transform:uppercase}
-td{padding:8px 10px;border-bottom:1px solid var(--border)}
+th{text-align:left;padding:8px 10px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;text-transform:uppercase;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 tr:hover td{background:var(--card-hover)}
 .theme-btn{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:15px;line-height:1}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.tag.bullish{background:#14522b;color:var(--green)} .tag.bearish{background:#521414;color:var(--red)} .tag.neutral{background:#2a3a4a;color:#94a3b8}
-.up{color:var(--green)} .down{color:var(--red)}
-[data-theme="light"] .tag.bullish{background:#dcfce7;color:var(--green)}
-[data-theme="light"] .tag.bearish{background:#fef2f2;color:var(--red)}
-[data-theme="light"] .tag.neutral{background:#f1f5f9;color:var(--text2)}
+.tag.bullish{background:#dcfce7;color:var(--green)} .tag.bearish{background:#fef2f2;color:var(--red)} .tag.neutral{background:#f1f5f9;color:var(--text2)}
+[data-theme="dark"] .tag.bullish{background:#14522b;color:var(--green)}
+[data-theme="dark"] .tag.bearish{background:#521414;color:var(--red)}
+[data-theme="dark"] .tag.neutral{background:#2a3a4a;color:#94a3b8}
+.note{color:var(--text2);font-size:12px;margin-top:8px}
 </style></head>
 <body><div class="container">
-<div class="header-bar"><div><h1>📊 情绪回测看板</h1><div class="subtitle">@aleabitoreddit · 虚拟组合 · 2026-06-21</div></div>
+<div class="header-bar"><div><h1>📊 情绪回测看板</h1>
+<div class="subtitle">根据推特博主 <a href="https://x.com/aleabitoreddit" target="_blank" style="color:var(--blue)">@aleabitoreddit</a> 的推文生成的虚拟投资组合</div>
+<div class="update-time">更新于 2026-06-22 18:49:30</div></div>
 <div style="display:flex;gap:8px;align-items:center">
-<button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+<button class="theme-btn" onclick="toggleTheme()" id="themeToggle">☀️</button>
 </div></div>
 
 <div class="stats-row">
@@ -56,18 +59,19 @@ tr:hover td{background:var(--card-hover)}
 <div class="chart-box"><h3>🏆 最常交易 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
 </div>
 
-<div class="chart-box"><h3>📌 最近 7 天提及股票</h3>
-<div style="overflow-x:auto"><table><thead><tr>
-<th>股票</th><th>提及</th><th>情绪分</th><th>组合权重</th><th>最新价</th>
+<div class="chart-box"><h3>📌 近 7 天提及股票</h3>
+<div class="note">提及次数为近 7 天累计，情绪分为同期所有提及的情绪总分（正=看多，负=看空）</div>
+<div style="overflow-x:auto;margin-top:8px"><table><thead><tr>
+<th>股票</th><th>7天提及</th><th>情绪总分</th><th>上次情绪</th><th>上次提及</th><th>组合权重</th><th>最新价</th>
 </tr></thead><tbody id="mb"></tbody></table></div>
 </div></div>
 
 <script>
-const TH = {'dark':{g:'#253a48',t:'#8899aa',l:'#b0c4d8'},'light':{g:'#e2e8f0',t:'#64748b',l:'#64748b'}}
+const TH = {'light':{g:'#e2e8f0',t:'#64748b',l:'#64748b'},'dark':{g:'#253a48',t:'#8899aa',l:'#b0c4d8'}}
 
 function toggleTheme() {
   const d = document.documentElement;
-  const cur = d.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  const cur = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   d.setAttribute('data-theme', cur);
   localStorage.setItem('theme', cur);
   document.getElementById('themeToggle').textContent = cur === 'dark' ? '🌙' : '☀️';
@@ -79,18 +83,24 @@ function toggleTheme() {
     c.update();
   });
 }
-const curTheme = localStorage.getItem('theme') || 'dark';
+const curTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', curTheme);
 document.getElementById('themeToggle').textContent = curTheme === 'dark' ? '🌙' : '☀️';
 
-const MENTIONS = [{"symbol": "SIVE", "count": 14, "total_score": 10.391, "weight": 15.5, "price": 96.0}, {"symbol": "AAOI", "count": 11, "total_score": 5.888, "weight": 5.5, "price": 161.85}, {"symbol": "NVDA", "count": 11, "total_score": 7.941, "weight": 8.0, "price": 210.69}, {"symbol": "LITE", "count": 9, "total_score": 6.151, "weight": 5.7, "price": 850.0}, {"symbol": "MU", "count": 6, "total_score": 3.385, "weight": 0.9, "price": 1133.99}, {"symbol": "XFAB", "count": 6, "total_score": 3.403, "weight": 3.4, "price": 9.2}, {"symbol": "AEHR", "count": 5, "total_score": 1.947, "weight": 1.3, "price": 115.3}, {"symbol": "AMD", "count": 5, "total_score": 2.727, "weight": 2.4, "price": 537.37}, {"symbol": "AXTI", "count": 5, "total_score": 0.954, "weight": 1.6, "price": 84.57}, {"symbol": "INTC", "count": 5, "total_score": 1.865, "weight": 2.3, "price": 133.99}, {"symbol": "IQE", "count": 5, "total_score": 3.553, "weight": 2.4, "price": 50.8}, {"symbol": "RDDT", "count": 5, "total_score": 0.774, "weight": 0.7, "price": 174.96}, {"symbol": "SNDK", "count": 5, "total_score": 0.499, "weight": 1.1, "price": 2184.75}, {"symbol": "SPCX", "count": 5, "total_score": 1.651, "weight": 0.7, "price": 185.0}, {"symbol": "EWY", "count": 4, "total_score": 2.882, "weight": 1.0, "price": 219.2}, {"symbol": "NBIS", "count": 4, "total_score": 2.867, "weight": 2.6, "price": 286.69}, {"symbol": "ACMR", "count": 3, "total_score": 1.615, "weight": 0.4, "price": 109.87}, {"symbol": "JBL", "count": 3, "total_score": 1.583, "weight": 3.5, "price": 371.88}, {"symbol": "MSFT", "count": 3, "total_score": 2.01, "weight": 1.0, "price": 379.4}, {"symbol": "POET", "count": 3, "total_score": 0.614, "weight": 1.3, "price": 12.15}, {"symbol": "TSEM", "count": 3, "total_score": 1.81, "weight": 2.1, "price": 286.74}, {"symbol": "WOLF", "count": 3, "total_score": 1.661, "weight": 0.6, "price": 57.41}, {"symbol": "AAPL", "count": 2, "total_score": 1.702, "weight": 1.4, "price": 298.01}, {"symbol": "ASML", "count": 2, "total_score": 0.404, "weight": 0.2, "price": 1929.68}, {"symbol": "COHR", "count": 2, "total_score": 1.779, "weight": 2.0, "price": 389.57}, {"symbol": "IREN", "count": 2, "total_score": 1.596, "weight": 0.1, "price": 59.96}, {"symbol": "META", "count": 2, "total_score": 1.434, "weight": 0.9, "price": 577.22}, {"symbol": "MRVL", "count": 2, "total_score": 1.123, "weight": 3.5, "price": 310.58}, {"symbol": "MTSI", "count": 2, "total_score": 0.927, "weight": 1.0, "price": 391.41}, {"symbol": "XLU", "count": 2, "total_score": 0.533, "weight": 0.2, "price": 44.76}, {"symbol": "AEVA", "count": 1, "total_score": 0.962, "weight": 0.6, "price": 24.39}, {"symbol": "AIXA", "count": 1, "total_score": 0.764, "weight": 0.3, "price": 59.84}, {"symbol": "AMZN", "count": 1, "total_score": 0.477, "weight": 1.1, "price": 244.39}, {"symbol": "AOSL", "count": 1, "total_score": 0.433, "weight": 0.1, "price": 48.04}, {"symbol": "ARM", "count": 1, "total_score": 0.621, "weight": 1.1, "price": 439.46}, {"symbol": "CAMT", "count": 1, "total_score": 0.7, "weight": 0.2, "price": 195.16}, {"symbol": "CRM", "count": 1, "total_score": 0.813, "weight": 0.3, "price": 151.78}, {"symbol": "GFS", "count": 1, "total_score": 0.7, "weight": 2.4, "price": 85.83}, {"symbol": "GOOGL", "count": 1, "total_score": 0.961, "weight": 1.2, "price": 368.03}, {"symbol": "HPS.A", "count": 1, "total_score": 0.621, "weight": 0, "price": null}, {"symbol": "MXL", "count": 1, "total_score": 0.714, "weight": 0.2, "price": 88.76}, {"symbol": "NVTS", "count": 1, "total_score": 0.433, "weight": 0.8, "price": 24.02}, {"symbol": "ON", "count": 1, "total_score": 0.433, "weight": 0.2, "price": 121.62}, {"symbol": "POWI", "count": 1, "total_score": 0.433, "weight": 0.5, "price": 87.11}, {"symbol": "SIMO", "count": 1, "total_score": 0.621, "weight": 0.3, "price": 321.66}, {"symbol": "SIVEF", "count": 1, "total_score": 0.711, "weight": 0.3, "price": 10.12}, {"symbol": "SNAP", "count": 1, "total_score": 0.621, "weight": 0.3, "price": 4.66}, {"symbol": "TTD", "count": 1, "total_score": 0.621, "weight": 0.2, "price": 18.51}, {"symbol": "VRT", "count": 1, "total_score": 0.961, "weight": 0.3, "price": 333.05}, {"symbol": "VSH", "count": 1, "total_score": -0.385, "weight": 0, "price": null}];
+const MENTIONS = [{"symbol": "SIVE", "count_7d": 14, "total_score": 10.391, "weight": 15.5, "price": 96.0, "last_time": "2026-06-20T03:52:23", "last_score": 0.85}, {"symbol": "AAOI", "count_7d": 11, "total_score": 5.888, "weight": 5.5, "price": 161.85, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "NVDA", "count_7d": 11, "total_score": 7.941, "weight": 8.0, "price": 210.69, "last_time": "2026-06-21T01:09:19", "last_score": 0.484}, {"symbol": "LITE", "count_7d": 9, "total_score": 6.151, "weight": 5.7, "price": 850.0, "last_time": "2026-06-19T12:40:06", "last_score": 0.813}, {"symbol": "MU", "count_7d": 6, "total_score": 3.385, "weight": 0.9, "price": 1133.99, "last_time": "2026-06-19T12:29:56", "last_score": -0.088}, {"symbol": "XFAB", "count_7d": 6, "total_score": 3.403, "weight": 3.4, "price": 9.2, "last_time": "2026-06-19T13:29:30", "last_score": 0.764}, {"symbol": "AEHR", "count_7d": 5, "total_score": 1.947, "weight": 1.3, "price": 115.3, "last_time": "2026-06-19T13:29:30", "last_score": 0.764}, {"symbol": "AMD", "count_7d": 5, "total_score": 2.727, "weight": 2.4, "price": 537.37, "last_time": "2026-06-18T15:11:53", "last_score": 0.711}, {"symbol": "AXTI", "count_7d": 5, "total_score": 0.954, "weight": 1.6, "price": 84.57, "last_time": "2026-06-20T11:52:49", "last_score": -0.929}, {"symbol": "INTC", "count_7d": 5, "total_score": 1.865, "weight": 2.3, "price": 133.99, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "IQE", "count_7d": 5, "total_score": 3.553, "weight": 2.4, "price": 50.8, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "RDDT", "count_7d": 5, "total_score": 0.774, "weight": 0.7, "price": 174.96, "last_time": "2026-06-20T11:52:49", "last_score": -0.929}, {"symbol": "SNDK", "count_7d": 5, "total_score": 0.499, "weight": 1.1, "price": 2184.75, "last_time": "2026-06-21T06:18:53", "last_score": -0.188}, {"symbol": "SPCX", "count_7d": 5, "total_score": 1.651, "weight": 0.7, "price": 185.0, "last_time": "2026-06-18T13:45:08", "last_score": -0.348}, {"symbol": "EWY", "count_7d": 4, "total_score": 2.882, "weight": 1.0, "price": 219.2, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "NBIS", "count_7d": 4, "total_score": 2.867, "weight": 2.6, "price": 286.69, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "ACMR", "count_7d": 3, "total_score": 1.615, "weight": 0.4, "price": 109.87, "last_time": "2026-06-20T03:52:23", "last_score": 0.0}, {"symbol": "JBL", "count_7d": 3, "total_score": 1.583, "weight": 3.5, "price": 371.88, "last_time": "2026-06-17T15:06:36", "last_score": 0.381}, {"symbol": "MSFT", "count_7d": 3, "total_score": 2.01, "weight": 1.0, "price": 379.4, "last_time": "2026-06-19T12:40:06", "last_score": 0.813}, {"symbol": "POET", "count_7d": 3, "total_score": 0.614, "weight": 1.3, "price": 12.15, "last_time": "2026-06-19T12:40:06", "last_score": 0.813}, {"symbol": "TSEM", "count_7d": 3, "total_score": 1.81, "weight": 2.1, "price": 286.74, "last_time": "2026-06-19T13:29:30", "last_score": 0.764}, {"symbol": "WOLF", "count_7d": 3, "total_score": 1.661, "weight": 0.6, "price": 57.41, "last_time": "2026-06-15T03:53:00", "last_score": 0.298}, {"symbol": "AAPL", "count_7d": 2, "total_score": 1.702, "weight": 1.4, "price": 298.01, "last_time": "2026-06-18T15:06:08", "last_score": 0.74}, {"symbol": "ASML", "count_7d": 2, "total_score": 0.404, "weight": 0.2, "price": 1929.68, "last_time": "2026-06-21T03:32:21", "last_score": 0.424}, {"symbol": "COHR", "count_7d": 2, "total_score": 1.779, "weight": 2.0, "price": 389.57, "last_time": "2026-06-19T12:40:06", "last_score": 0.813}, {"symbol": "IREN", "count_7d": 2, "total_score": 1.596, "weight": 0.1, "price": 59.96, "last_time": "2026-06-17T14:57:10", "last_score": 0.957}, {"symbol": "META", "count_7d": 2, "total_score": 1.434, "weight": 0.9, "price": 577.22, "last_time": "2026-06-19T12:40:06", "last_score": 0.813}, {"symbol": "MRVL", "count_7d": 2, "total_score": 1.123, "weight": 3.5, "price": 310.58, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "MTSI", "count_7d": 2, "total_score": 0.927, "weight": 1.0, "price": 391.41, "last_time": "2026-06-15T13:13:30", "last_score": 0.502}, {"symbol": "XLU", "count_7d": 2, "total_score": 0.533, "weight": 0.2, "price": 44.76, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "AEVA", "count_7d": 1, "total_score": 0.962, "weight": 0.6, "price": 24.39, "last_time": "2026-06-15T12:51:05", "last_score": 0.962}, {"symbol": "AIXA", "count_7d": 1, "total_score": 0.764, "weight": 0.3, "price": 59.84, "last_time": "2026-06-19T13:29:30", "last_score": 0.764}, {"symbol": "AMZN", "count_7d": 1, "total_score": 0.477, "weight": 1.1, "price": 244.39, "last_time": "2026-06-17T11:24:26", "last_score": 0.477}, {"symbol": "AOSL", "count_7d": 1, "total_score": 0.433, "weight": 0.1, "price": 48.04, "last_time": "2026-06-15T01:31:49", "last_score": 0.433}, {"symbol": "ARM", "count_7d": 1, "total_score": 0.621, "weight": 1.1, "price": 439.46, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "CAMT", "count_7d": 1, "total_score": 0.7, "weight": 0.2, "price": 195.16, "last_time": "2026-06-20T03:52:23", "last_score": 0.7}, {"symbol": "CRM", "count_7d": 1, "total_score": 0.813, "weight": 0.3, "price": 151.78, "last_time": "2026-06-19T12:40:06", "last_score": 0.813}, {"symbol": "GFS", "count_7d": 1, "total_score": 0.7, "weight": 2.4, "price": 85.83, "last_time": "2026-06-15T12:31:08", "last_score": 0.7}, {"symbol": "GOOGL", "count_7d": 1, "total_score": 0.961, "weight": 1.2, "price": 368.03, "last_time": "2026-06-15T01:24:47", "last_score": 0.961}, {"symbol": "HPS.A", "count_7d": 1, "total_score": 0.621, "weight": 0, "price": null, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "MXL", "count_7d": 1, "total_score": 0.714, "weight": 0.2, "price": 88.76, "last_time": "2026-06-19T13:01:41", "last_score": 0.714}, {"symbol": "NVTS", "count_7d": 1, "total_score": 0.433, "weight": 0.8, "price": 24.02, "last_time": "2026-06-15T01:31:49", "last_score": 0.433}, {"symbol": "ON", "count_7d": 1, "total_score": 0.433, "weight": 0.2, "price": 121.62, "last_time": "2026-06-15T01:31:49", "last_score": 0.433}, {"symbol": "POWI", "count_7d": 1, "total_score": 0.433, "weight": 0.5, "price": 87.11, "last_time": "2026-06-15T01:31:49", "last_score": 0.433}, {"symbol": "SIMO", "count_7d": 1, "total_score": 0.621, "weight": 0.3, "price": 321.66, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "SIVEF", "count_7d": 1, "total_score": 0.711, "weight": 0.3, "price": 10.12, "last_time": "2026-06-18T15:11:53", "last_score": 0.711}, {"symbol": "SNAP", "count_7d": 1, "total_score": 0.621, "weight": 0.3, "price": 4.66, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "TTD", "count_7d": 1, "total_score": 0.621, "weight": 0.2, "price": 18.51, "last_time": "2026-06-19T12:19:38", "last_score": 0.621}, {"symbol": "VRT", "count_7d": 1, "total_score": 0.961, "weight": 0.3, "price": 333.05, "last_time": "2026-06-15T01:24:47", "last_score": 0.961}, {"symbol": "VSH", "count_7d": 1, "total_score": -0.385, "weight": 0, "price": null, "last_time": "2026-06-19T12:55:10", "last_score": -0.385}];
 
 let html = '';
 for (const r of MENTIONS) {
   const tag = r.total_score > 0.5 ? 'bullish' : (r.total_score < -0.3 ? 'bearish' : 'neutral');
-  html += '<tr><td><strong>'+r.symbol+'</strong></td><td>'+r.count+'次</td>'+
+  const lastTag = r.last_score > 0.5 ? 'bullish' : (r.last_score < -0.3 ? 'bearish' : 'neutral');
+  const lastTime = r.last_time ? r.last_time.slice(0,19).replace('T',' ') : '-';
+  html += '<tr><td><strong>'+r.symbol+'</strong></td>'+
+    '<td>'+r.count_7d+'次</td>'+
     '<td><span class="tag '+tag+'">'+(r.total_score>=0?'+':'')+r.total_score.toFixed(3)+'</span></td>'+
-    '<td>'+r.weight+'%</td><td>'+(r.price?'$'+r.price.toFixed(2):'-')+'</td></tr>';
+    '<td><span class="tag '+lastTag+'">'+(r.last_score>=0?'+':'')+r.last_score.toFixed(3)+'</span></td>'+
+    '<td style="font-size:12px">'+lastTime+'</td>'+
+    '<td>'+r.weight+'%</td>'+
+    '<td>'+(r.price?'$'+r.price.toFixed(2):'-')+'</td></tr>';
 }
 document.getElementById('mb').innerHTML = html;
 
