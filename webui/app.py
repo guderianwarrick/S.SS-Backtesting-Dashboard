@@ -351,12 +351,17 @@ async function refreshData() {
   try {
     const h = await fetchJSON(`/api/holdings${query}`);
     const entries = Object.entries(h.holdings || {});
-    entries.sort((a, b) => b[1] - a[1]);
+    entries.sort((a, b) => b[1].weight - a[1].weight);
     // 渲染前十大持仓
     let hHtml = '<table><thead><tr><th>#</th><th>股票</th><th>权重</th><th>最新价</th><th>涨跌</th></tr></thead><tbody>';
     for (let i = 0; i < Math.min(10, entries.length); i++) {
-      const [sym, w] = entries[i];
-      hHtml += '<tr><td>'+(i+1)+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(1)+'%</td><td>-</td><td>-</td></tr>';
+      const [sym, info] = entries[i];
+      const ch = info.change;
+      const chStr = ch !== null ? (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%' : '-';
+      const chCls = ch > 0 ? 'up' : (ch < 0 ? 'down' : '');
+      hHtml += '<tr><td>'+(i+1)+'</td><td><strong>'+sym+'</strong></td><td>'+(info.weight*100).toFixed(1)+'%</td>'+
+        '<td>'+(info.price ? '$'+info.price.toFixed(2) : '-')+'</td>'+
+        '<td class="'+chCls+'">'+chStr+'</td></tr>';
     }
     hHtml += '</tbody></table>';
     document.getElementById('holdingsTable').innerHTML = hHtml;
@@ -455,8 +460,13 @@ function fetchAndShowHoldings() {
   const entries = window._allHoldings || [];
   let rows = '';
   for (let i = 0; i < entries.length; i++) {
-    const [sym, w] = entries[i];
-    rows += '<tr><td>'+(i+1)+'</td><td><strong>'+sym+'</strong></td><td>'+(w*100).toFixed(2)+'%</td><td>-</td><td>-</td></tr>';
+    const [sym, info] = entries[i];
+    const ch = info.change;
+    const chStr = ch !== null ? (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%' : '-';
+    const chCls = ch > 0 ? 'up' : (ch < 0 ? 'down' : '');
+    rows += '<tr><td>'+(i+1)+'</td><td><strong>'+sym+'</strong></td><td>'+(info.weight*100).toFixed(2)+'%</td>'+
+      '<td>'+(info.price ? '$'+info.price.toFixed(2) : '-')+'</td>'+
+      '<td class="'+chCls+'">'+chStr+'</td></tr>';
   }
   document.getElementById('holdingsModalBody').innerHTML = rows;
   document.getElementById('holdingsModalCount').textContent = entries.length;
@@ -562,7 +572,7 @@ def api_equity_curve(from_date: str = Query("", description="开始日期 YYYY-M
 
 @app.get("/api/holdings")
 def api_holdings(from_date: str = Query("", description="开始日期 YYYY-MM-DD")):
-    """获取最新日期的持仓分布"""
+    """获取最新日期的持仓分布（含价格和涨跌）"""
     with session_scope() as s:
         q = s.query(RebalanceEvent)
         if from_date:
@@ -576,11 +586,44 @@ def api_holdings(from_date: str = Query("", description="开始日期 YYYY-MM-DD
             .filter(RebalanceEvent.date == last_date.date)
             .all()
         )
-        weights = {h.symbol: h.new_weight for h in holdings if h.new_weight > 0}
-        # Sort by weight descending
-        weights = dict(sorted(weights.items(), key=lambda x: -x[1]))
-
-        return {"holdings": weights, "date": last_date.date}
+        result = {}
+        import json as _json
+        from pathlib import Path
+        cache_dir = Path("data/price_cache")
+        today_str = date.today().isoformat()
+        for h in holdings:
+            if h.new_weight <= 0:
+                continue
+            price = h.price if h and h.price else None
+            change = None
+            cache_path = cache_dir / f"{h.symbol}.json"
+            if cache_path.exists():
+                try:
+                    pdata = _json.loads(cache_path.read_text())
+                    pkeys = sorted(pdata.keys())
+                    latest_key = None
+                    for k in reversed(pkeys):
+                        if k <= today_str:
+                            latest_key = k
+                            break
+                    if latest_key:
+                        c = pdata[latest_key].get("c") or pdata[latest_key].get("o")
+                        if c:
+                            price = round(c, 2)
+                            idx = pkeys.index(latest_key)
+                            if idx > 0:
+                                prev_c = pdata[pkeys[idx-1]].get("c") or pdata[pkeys[idx-1]].get("o")
+                                if prev_c and prev_c > 0:
+                                    change = round((c - prev_c) / prev_c * 100, 2)
+                except:
+                    pass
+            result[h.symbol] = {
+                "weight": round(h.new_weight, 4),
+                "price": price,
+                "change": change
+            }
+        result = dict(sorted(result.items(), key=lambda x: -x[1]["weight"]))
+        return {"holdings": result, "date": last_date.date}
 
 @app.get("/api/top_symbols")
 def api_top_symbols(from_date: str = Query("", description="开始日期 YYYY-MM-DD")):
