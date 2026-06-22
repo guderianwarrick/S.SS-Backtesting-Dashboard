@@ -82,6 +82,22 @@ def gen():
                 if qqq_start and qqq_end and qqq_start > 0:
                     qqq_return = (qqq_end - qqq_start) / qqq_start
                     qqq_excess = cr - qqq_return
+            
+            # 构建与 eq_dates 对齐的 QQQ 归一化曲线（以 initial 为基准）
+            qqq_curve = []
+            for d in eq_dates:
+                # 找该日期最近的价格
+                price = None
+                for qd in qqq_dates:
+                    if qd >= d:
+                        price = qqq_data[qd].get("c") or qqq_data[qd].get("o")
+                        break
+                if price and qqq_start and qqq_start > 0:
+                    qqq_curve.append(round(initial * (price / qqq_start), 2))
+                else:
+                    qqq_curve.append(None)
+        else:
+            qqq_curve = []
         
         # 最近 7 天提及（从 StockMention 取）
         seven_days_ago = date.today() - timedelta(days=7)
@@ -147,6 +163,7 @@ def gen():
     top_labels = json.dumps([r[0] for r in top_mentions])
     top_values = json.dumps([r[1] for r in top_mentions])
     top_sentiments = json.dumps([round(r[2], 3) if r[2] else 0 for r in top_mentions])
+    qqq_curve_json = json.dumps(qqq_curve)
     mentions_json = json.dumps(mentions)
     updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
@@ -203,12 +220,11 @@ tr:hover td{{background:var(--card-hover)}}
 <div class="stat-card"><div class="l">累计收益</div><div class="v {'g' if cr>=0 else 'r'}">{cr*100:.2f}%</div></div>
 <div class="stat-card"><div class="l">夏普比率</div><div class="v">{sharpe:.2f}</div></div>
 <div class="stat-card"><div class="l">最大回撤</div><div class="v r">{max_dd*100:.1f}%</div></div>
-<div class="stat-card"><div class="l">vs QQQ 超额</div><div class="v {'g' if qqq_excess>=0 else 'r'}">{qqq_excess*100:+.2f}%</div></div>
 <div class="stat-card"><div class="l">调仓次数</div><div class="v">{total_events:,}</div></div>
 <div class="stat-card"><div class="l">涉及股票</div><div class="v">{total_symbols}</div></div>
 </div>
 
-<div class="chart-box"><h3>📈 组合净值曲线</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
+<div class="chart-box"><h3>📈 组合净值曲线 vs QQQ 基准</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
 <div class="grid-2">
 <div class="chart-box"><h3>🧩 当前持仓 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="hChart"></canvas></div></div>
 <div class="chart-box"><h3>🏆 最常提及 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
@@ -263,8 +279,14 @@ const tt = TH[curTheme];
 function mkScale() {{ return {{x:{{ticks:{{color:tt.t}},grid:{{color:tt.g}}}},y:{{ticks:{{color:tt.t}},grid:{{color:tt.g}}}}}} }}
 
 const eqChart = new Chart(document.getElementById('eqChart'), {{
-  type:'line',data:{{labels:{eq_dates_json},datasets:[{{label:'净值',data:{eq_values_json},borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,tension:0.2,pointRadius:0,borderWidth:2}}]}},
-  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{display:false}},tooltip:{{callbacks:{{label:ctx=>'$'+ctx.parsed.y.toLocaleString()}}}}}},scales:mkScale()}}
+  type:'line',data:{{
+    labels:{eq_dates_json},
+    datasets:[
+      {{label:'组合净值',data:{eq_values_json},borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,tension:0.2,pointRadius:0,borderWidth:2}},
+      {{label:'QQQ 基准',data:{qqq_curve_json},borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.05)',fill:false,tension:0.2,pointRadius:0,borderWidth:2,borderDash:[5,5]}}
+    ]
+  }},
+  options:{{responsive:true,maintainAspectRatio:false,plugins:{{legend:{{position:'top',labels:{{color:tt.l,font:{{size:12}},boxWidth:15,padding:12}}}},tooltip:{{callbacks:{{label:ctx=>ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString()}}}}}},scales:mkScale()}}
 }});
 
 const hData = {h_items};
