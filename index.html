@@ -3,167 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock Sentiment 回测看板</title>
+<title>情绪回测看板 - S.SS</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
+:root { --bg:#0f1923; --card:#1a2d3a; --card-hover:#1e3342; --text:#e0e6ed; --text2:#8899aa; --h:#fff; --border:#253a48; --green:#4ade80; --red:#f87171; --blue:#2563eb; --grid:#253a48; }
+[data-theme="light"] { --bg:#f0f4f8; --card:#fff; --card-hover:#f8fafc; --text:#1e293b; --text2:#64748b; --h:#0f172a; --border:#e2e8f0; --green:#16a34a; --red:#dc2626; --grid:#e2e8f0; }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1923;color:#e0e6ed;padding:20px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:20px}
 .container{max-width:1400px;margin:0 auto}
-h1{font-size:24px;margin-bottom:6px;color:#fff}
-.subtitle{color:#8899aa;font-size:14px;margin-bottom:24px}
+h1{font-size:24px;color:var(--h);margin-bottom:6px}
+.subtitle{color:var(--text2);font-size:14px;margin-bottom:24px}
+.header-bar{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:24px}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}
-.stat-card{background:#1a2d3a;border-radius:10px;padding:16px 20px;border:1px solid #253a48}
-.stat-card .label{font-size:12px;color:#8899aa;text-transform:uppercase;letter-spacing:.5px}
-.stat-card .value{font-size:26px;font-weight:700;color:#fff;margin-top:4px}
-.stat-card .value.positive{color:#4ade80}
-.stat-card .value.negative{color:#f87171}
-.chart-container{background:#1a2d3a;border-radius:10px;padding:20px;border:1px solid #253a48;margin-bottom:24px}
-.chart-container h3{font-size:15px;color:#b0c4d8;margin-bottom:12px}
-.chart-wrapper{position:relative;width:100%;height:400px}
+.stat-card{background:var(--card);border-radius:10px;padding:16px 20px;border:1px solid var(--border)}
+.stat-card .l{font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.stat-card .v{font-size:26px;font-weight:700;color:var(--h);margin-top:4px}
+.stat-card .v.g{color:var(--green)} .stat-card .v.r{color:var(--red)}
+.chart-box{background:var(--card);border-radius:10px;padding:20px;border:1px solid var(--border);margin-bottom:24px}
+.chart-box h3{font-size:15px;color:var(--text2);margin-bottom:12px}
+.chart-wrap{position:relative;width:100%;height:400px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
 @media(max-width:900px){.grid-2{grid-template-columns:1fr}}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{text-align:left;padding:8px 10px;color:#8899aa;border-bottom:1px solid #253a48;font-weight:600;font-size:11px;text-transform:uppercase}
-tbody td{padding:8px 10px;border-bottom:1px solid #1e3342}
-tbody tr:hover{background:#1e3342}
+th{text-align:left;padding:8px 10px;color:var(--text2);border-bottom:1px solid var(--border);font-weight:600;font-size:11px;text-transform:uppercase}
+td{padding:8px 10px;border-bottom:1px solid var(--border)}
+tr:hover td{background:var(--card-hover)}
+.theme-btn{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:15px;line-height:1}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.tag.bullish{background:#14522b;color:#4ade80}
-.tag.bearish{background:#521414;color:#f87171}
-.tag.neutral{background:#2a3a4a;color:#94a3b8}
-.up{color:#4ade80}
-.down{color:#f87171}
-</style>
-</head>
-<body>
-<div class="container">
-  <div class="header-bar" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:24px">
-    <div>
-      <h1>📊 情绪回测看板</h1>
-      <div class="subtitle">@aleabitoreddit · 虚拟组合回测 · 2025-07-03 ~ 2026-06-21</div>
-    </div>
-  </div>
+.tag.bullish{background:#14522b;color:var(--green)} .tag.bearish{background:#521414;color:var(--red)} .tag.neutral{background:#2a3a4a;color:#94a3b8}
+.up{color:var(--green)} .down{color:var(--red)}
+[data-theme="light"] .tag.bullish{background:#dcfce7;color:var(--green)}
+[data-theme="light"] .tag.bearish{background:#fef2f2;color:var(--red)}
+[data-theme="light"] .tag.neutral{background:#f1f5f9;color:var(--text2)}
+</style></head>
+<body><div class="container">
+<div class="header-bar"><div><h1>📊 情绪回测看板</h1><div class="subtitle">@aleabitoreddit · 虚拟组合 · 2026-06-21</div></div>
+<div style="display:flex;gap:8px;align-items:center">
+<button class="theme-btn" onclick="toggleTheme()" id="themeToggle">🌙</button>
+</div></div>
 
-  <div class="stats-row">
-    <div class="stat-card"><div class="label">初始资金</div><div class="value">$ 100,000</div></div>
-    <div class="stat-card"><div class="label">最终价值</div><div class="value">$ 241,306</div></div>
-    <div class="stat-card"><div class="label">累计收益</div><div class="value positive">+141.31%</div></div>
-    <div class="stat-card"><div class="label">夏普比率</div><div class="value">2.15</div></div>
-    <div class="stat-card"><div class="label">最大回撤</div><div class="value negative">25.3%</div></div>
-    <div class="stat-card"><div class="label">调仓次数</div><div class="value">84,586</div></div>
-    <div class="stat-card"><div class="label">涉及股票</div><div class="value">573</div></div>
-  </div>
-
-  <div class="chart-container">
-    <h3>📈 组合净值曲线</h3>
-    <div class="chart-wrapper"><canvas id="equityChart"></canvas></div>
-  </div>
-
-  <div class="grid-2">
-    <div class="chart-container">
-      <h3>🧩 当前持仓分布</h3>
-      <div class="chart-wrapper" style="height:300px"><canvas id="holdingsChart"></canvas></div>
-    </div>
-    <div class="chart-container">
-      <h3>🏆 最常交易股票 TOP 20</h3>
-      <div class="chart-wrapper" style="height:300px"><canvas id="topSymbolsChart"></canvas></div>
-    </div>
-  </div>
-
-  <div class="chart-container">
-    <h3>📌 最近7天提及股票</h3>
-    <div style="overflow-x:auto"><table>
-      <thead><tr>
-        <th>股票</th><th>提及次数</th><th>情绪总分</th><th>当前权重</th><th>最早提及日</th><th>当日股价</th><th>最新股价</th><th>涨跌变化</th>
-      </tr></thead>
-      <tbody id="mentionsBody"></tbody>
-    </table></div>
-  </div>
+<div class="stats-row">
+<div class="stat-card"><div class="l">初始资金</div><div class="v">$ 367,772</div></div>
+<div class="stat-card"><div class="l">最终价值</div><div class="v">$ 367,772</div></div>
+<div class="stat-card"><div class="l">累计收益</div><div class="v g">0.00%</div></div>
+<div class="stat-card"><div class="l">调仓次数</div><div class="v">295</div></div>
+<div class="stat-card"><div class="l">涉及股票</div><div class="v">210</div></div>
 </div>
 
+<div class="chart-box"><h3>📈 组合净值曲线</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
+<div class="grid-2">
+<div class="chart-box"><h3>🧩 当前持仓 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="hChart"></canvas></div></div>
+<div class="chart-box"><h3>🏆 最常交易 Top 20</h3><div class="chart-wrap" style="height:300px"><canvas id="topChart"></canvas></div></div>
+</div>
+
+<div class="chart-box"><h3>📌 最近 7 天提及股票</h3>
+<div style="overflow-x:auto"><table><thead><tr>
+<th>股票</th><th>提及</th><th>情绪分</th><th>组合权重</th><th>最新价</th>
+</tr></thead><tbody id="mb"></tbody></table></div>
+</div></div>
+
 <script>
-const MENTIONS = [{"symbol": "SIVE", "count": 14, "total_score": 10.391, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "NVDA", "count": 11, "total_score": 7.941, "weight": 7.25, "first_date": "2026-06-15", "price_first": 212.45, "price_now": 210.69, "change_pct": -0.83}, {"symbol": "AAOI", "count": 11, "total_score": 5.888, "weight": 4.99, "first_date": "2026-06-15", "price_first": 191.55, "price_now": 161.85, "change_pct": -15.51}, {"symbol": "LITE", "count": 9, "total_score": 6.151, "weight": 5.19, "first_date": "2026-06-15", "price_first": 957.24, "price_now": 850.0, "change_pct": -11.2}, {"symbol": "LPK", "count": 7, "total_score": 4.517, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "XFAB", "count": 6, "total_score": 3.403, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "MU", "count": 6, "total_score": 3.385, "weight": 0.85, "first_date": "2026-06-15", "price_first": 1087.99, "price_now": 1133.99, "change_pct": 4.23}, {"symbol": "SNDK", "count": 5, "total_score": 0.499, "weight": 1.0, "first_date": "2026-06-16", "price_first": 1991.55, "price_now": 2184.75, "change_pct": 9.7}, {"symbol": "AXTI", "count": 5, "total_score": 0.954, "weight": 1.46, "first_date": "2026-06-15", "price_first": 110.74, "price_now": 84.57, "change_pct": -23.63}, {"symbol": "RDDT", "count": 5, "total_score": 0.774, "weight": 0.64, "first_date": "2026-06-18", "price_first": 174.96, "price_now": 174.96, "change_pct": 0.0}, {"symbol": "AEHR", "count": 5, "total_score": 1.947, "weight": 1.15, "first_date": "2026-06-15", "price_first": 115.88, "price_now": 115.3, "change_pct": -0.5}, {"symbol": "INTC", "count": 5, "total_score": 1.865, "weight": 2.08, "first_date": "2026-06-17", "price_first": 121.1, "price_now": 133.99, "change_pct": 10.64}, {"symbol": "IQE", "count": 5, "total_score": 3.553, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "AMD", "count": 5, "total_score": 2.727, "weight": 2.17, "first_date": "2026-06-15", "price_first": 547.26, "price_now": 537.37, "change_pct": -1.81}, {"symbol": "SPCX", "count": 5, "total_score": 1.651, "weight": 0.68, "first_date": "2026-06-15", "price_first": 192.5, "price_now": 185.0, "change_pct": -3.9}, {"symbol": "NBIS", "count": 4, "total_score": 2.867, "weight": 2.33, "first_date": "2026-06-15", "price_first": 260.07, "price_now": 286.69, "change_pct": 10.24}, {"symbol": "EWY", "count": 4, "total_score": 2.882, "weight": 0.94, "first_date": "2026-06-15", "price_first": 211.45, "price_now": 219.2, "change_pct": 3.67}, {"symbol": "ACMR", "count": 3, "total_score": 1.615, "weight": 0.41, "first_date": "2026-06-18", "price_first": 109.87, "price_now": 109.87, "change_pct": 0.0}, {"symbol": "TSEM", "count": 3, "total_score": 1.81, "weight": 1.88, "first_date": "2026-06-15", "price_first": 286.86, "price_now": 286.74, "change_pct": -0.04}, {"symbol": "POET", "count": 3, "total_score": 0.614, "weight": 1.19, "first_date": "2026-06-15", "price_first": 13.93, "price_now": 12.15, "change_pct": -12.78}, {"symbol": "MSFT", "count": 3, "total_score": 2.01, "weight": 0.91, "first_date": "2026-06-15", "price_first": 399.76, "price_now": 379.4, "change_pct": -5.09}, {"symbol": "SOI", "count": 3, "total_score": 2.239, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "RPI", "count": 3, "total_score": 2.053, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "ALRIB", "count": 3, "total_score": 2.309, "weight": 0, "first_date": "2026-06-15", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "JBL", "count": 3, "total_score": 1.583, "weight": 3.15, "first_date": "2026-06-15", "price_first": 385.63, "price_now": 371.88, "change_pct": -3.57}, {"symbol": "WOLF", "count": 3, "total_score": 1.661, "weight": 0.57, "first_date": "2026-06-15", "price_first": 49.09, "price_now": 57.41, "change_pct": 16.95}, {"symbol": "ASML", "count": 2, "total_score": 0.404, "weight": 0.18, "first_date": "2026-06-19", "price_first": 1929.68, "price_now": 1929.68, "change_pct": 0.0}, {"symbol": "COHR", "count": 2, "total_score": 1.779, "weight": 1.8, "first_date": "2026-06-18", "price_first": 389.57, "price_now": 389.57, "change_pct": 0.0}, {"symbol": "META", "count": 2, "total_score": 1.434, "weight": 0.83, "first_date": "2026-06-19", "price_first": 577.22, "price_now": 577.22, "change_pct": 0.0}, {"symbol": "XLU", "count": 2, "total_score": 0.533, "weight": 0.23, "first_date": "2026-06-17", "price_first": 44.46, "price_now": 44.76, "change_pct": 0.67}, {"symbol": "MRVL", "count": 2, "total_score": 1.123, "weight": 3.18, "first_date": "2026-06-15", "price_first": 308.88, "price_now": 310.58, "change_pct": 0.55}, {"symbol": "AAPL", "count": 2, "total_score": 1.702, "weight": 1.24, "first_date": "2026-06-15", "price_first": 296.42, "price_now": 298.01, "change_pct": 0.54}, {"symbol": "IREN", "count": 2, "total_score": 1.596, "weight": 0.12, "first_date": "2026-06-15", "price_first": 60.85, "price_now": 59.96, "change_pct": -1.46}, {"symbol": "MTSI", "count": 2, "total_score": 0.927, "weight": 0.88, "first_date": "2026-06-15", "price_first": 384.77, "price_now": 391.41, "change_pct": 1.73}, {"symbol": "TOWA", "count": 1, "total_score": 0.424, "weight": 0, "first_date": "2026-06-21", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "CAMT", "count": 1, "total_score": 0.7, "weight": 0.22, "first_date": "2026-06-20", "price_first": 195.16, "price_now": 195.16, "change_pct": 0.0}, {"symbol": "WYFI", "count": 1, "total_score": 0.6, "weight": 0.33, "first_date": "2026-06-20", "price_first": 38.49, "price_now": 38.49, "change_pct": 0.0}, {"symbol": "AIXA", "count": 1, "total_score": 0.764, "weight": 0, "first_date": "2026-06-19", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "MXL", "count": 1, "total_score": 0.714, "weight": 0.2, "first_date": "2026-06-19", "price_first": 88.76, "price_now": 88.76, "change_pct": 0.0}, {"symbol": "VSH", "count": 1, "total_score": -0.385, "weight": 0, "first_date": "2026-06-19", "price_first": 64.9, "price_now": 64.9, "change_pct": 0.0}, {"symbol": "CRM", "count": 1, "total_score": 0.813, "weight": 0.28, "first_date": "2026-06-19", "price_first": 151.78, "price_now": 151.78, "change_pct": 0.0}, {"symbol": "TTD", "count": 1, "total_score": 0.621, "weight": 0.17, "first_date": "2026-06-19", "price_first": 18.51, "price_now": 18.51, "change_pct": 0.0}, {"symbol": "SNAP", "count": 1, "total_score": 0.621, "weight": 0.25, "first_date": "2026-06-19", "price_first": 4.66, "price_now": 4.66, "change_pct": 0.0}, {"symbol": "ARM", "count": 1, "total_score": 0.621, "weight": 1.0, "first_date": "2026-06-19", "price_first": 439.46, "price_now": 439.46, "change_pct": 0.0}, {"symbol": "SIMO", "count": 1, "total_score": 0.621, "weight": 0.26, "first_date": "2026-06-19", "price_first": 321.66, "price_now": 321.66, "change_pct": 0.0}, {"symbol": "HPS.A", "count": 1, "total_score": 0.621, "weight": 0, "first_date": "2026-06-19", "price_first": null, "price_now": null, "change_pct": null}, {"symbol": "SIVEF", "count": 1, "total_score": 0.711, "weight": 0.28, "first_date": "2026-06-18", "price_first": 10.12, "price_now": 10.12, "change_pct": 0.0}, {"symbol": "AMZN", "count": 1, "total_score": 0.477, "weight": 1.03, "first_date": "2026-06-17", "price_first": 237.5, "price_now": 244.39, "change_pct": 2.9}, {"symbol": "AEVA", "count": 1, "total_score": 0.962, "weight": 0.58, "first_date": "2026-06-15", "price_first": 26.87, "price_now": 24.39, "change_pct": -9.23}, {"symbol": "GFS", "count": 1, "total_score": 0.7, "weight": 2.22, "first_date": "2026-06-15", "price_first": 83.98, "price_now": 85.83, "change_pct": 2.2}, {"symbol": "NVTS", "count": 1, "total_score": 0.433, "weight": 0.69, "first_date": "2026-06-15", "price_first": 23.73, "price_now": 24.02, "change_pct": 1.22}, {"symbol": "POWI", "count": 1, "total_score": 0.433, "weight": 0.45, "first_date": "2026-06-15", "price_first": 83.31, "price_now": 87.11, "change_pct": 4.56}, {"symbol": "ON", "count": 1, "total_score": 0.433, "weight": 0.21, "first_date": "2026-06-15", "price_first": 125.9, "price_now": 121.62, "change_pct": -3.4}, {"symbol": "AOSL", "count": 1, "total_score": 0.433, "weight": 0.12, "first_date": "2026-06-15", "price_first": 47.36, "price_now": 48.04, "change_pct": 1.44}, {"symbol": "GOOGL", "count": 1, "total_score": 0.961, "weight": 1.09, "first_date": "2026-06-15", "price_first": 369.35, "price_now": 368.03, "change_pct": -0.36}, {"symbol": "VRT", "count": 1, "total_score": 0.961, "weight": 0.24, "first_date": "2026-06-15", "price_first": 311.93, "price_now": 333.05, "change_pct": 6.77}];
+const TH = {'dark':{g:'#253a48',t:'#8899aa',l:'#b0c4d8'},'light':{g:'#e2e8f0',t:'#64748b',l:'#64748b'}}
 
-function render() {
-  let html = '';
-  for (const r of MENTIONS) {
-    const ch = r.change_pct;
-    let chStr = '-', chCls = '';
-    if (ch !== null && ch !== undefined) {
-      chStr = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%';
-      if (ch > 0) chCls = 'up';
-      else if (ch < 0) chCls = 'down';
-    }
-    const tagCls = r.total_score > 0.5 ? 'bullish' : (r.total_score < -0.3 ? 'bearish' : 'neutral');
-    html += `<tr>
-      <td><strong>${r.symbol}</strong></td>
-      <td>${r.count}次</td>
-      <td><span class="tag ${tagCls}">${r.total_score >= 0 ? '+' : ''}${r.total_score.toFixed(3)}</span></td>
-      <td>${r.weight.toFixed(1)}%</td>
-      <td>${r.first_date}</td>
-      <td>${r.price_first ? '$' + r.price_first.toFixed(2) : '-'}</td>
-      <td>${r.price_now ? '$' + r.price_now.toFixed(2) : '-'}</td>
-      <td class="${chCls}">${chStr}</td>
-    </tr>`;
-  }
-  document.getElementById('mentionsBody').innerHTML = html;
+function toggleTheme() {
+  const d = document.documentElement;
+  const cur = d.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  d.setAttribute('data-theme', cur);
+  localStorage.setItem('theme', cur);
+  document.getElementById('themeToggle').textContent = cur === 'dark' ? '🌙' : '☀️';
+  [eqChart, hChart, topChart].filter(Boolean).forEach(c => {
+    if (!c) return;
+    const t = TH[cur];
+    Object.values(c.options.scales||{}).forEach(s => { s.ticks.color = t.t; s.grid.color = t.g; });
+    if (c.options.plugins?.legend?.labels) c.options.plugins.legend.labels.color = t.l;
+    c.update();
+  });
 }
-render();
+const curTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', curTheme);
+document.getElementById('themeToggle').textContent = curTheme === 'dark' ? '🌙' : '☀️';
 
-new Chart(document.getElementById('equityChart'), {
-  type:'line',
-  data:{
-    labels:["2025-07-03", "2025-07-07", "2025-07-21", "2025-07-23", "2025-07-28", "2025-07-31", "2025-08-06", "2025-08-23", "2025-08-25", "2025-08-26", "2025-08-31", "2025-09-03", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-14", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-20", "2025-09-21", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-27", "2025-09-28", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-04", "2025-10-05", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-11", "2025-10-12", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-18", "2025-10-19", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-25", "2025-10-26", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-01", "2025-11-02", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-08", "2025-11-09", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-15", "2025-11-16", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-22", "2025-11-23", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-27", "2025-11-28", "2025-11-29", "2025-11-30", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-06", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-14", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-19", "2025-12-20", "2025-12-21", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-25", "2025-12-26", "2025-12-27", "2025-12-28", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-25", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-07", "2026-02-08", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-14", "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-28", "2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-11", "2026-04-12", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-18", "2026-04-19", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-17", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24", "2026-05-25", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-05-30", "2026-05-31", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21"],
-    datasets:[{
-      label:'组合净值',
-      data:[100000.0, 98489.29, 103811.16, 104526.73, 104003.03, 104620.21, 106246.19, 111036.05, 110245.94, 111096.97, 111001.3, 110949.33, 110896.87, 113114.78, 119966.43, 123655.63, 123334.21, 124782.5, 124782.47, 126447.78, 124957.25, 127166.0, 130169.57, 133012.62, 133012.63, 133012.6, 136606.24, 135897.53, 137155.61, 134442.88, 133513.24, 133513.2, 133513.19, 137327.95, 138102.21, 139791.48, 144868.41, 146247.78, 146247.83, 146247.83, 149423.72, 148925.21, 153793.35, 157063.31, 149851.82, 149851.78, 149851.74, 158223.03, 157816.2, 160183.68, 154180.61, 150127.66, 150127.71, 150127.74, 150856.84, 146937.44, 140766.57, 145583.17, 154019.38, 154019.36, 154019.37, 157724.03, 156185.49, 156692.83, 152795.73, 157036.51, 157036.59, 157036.67, 157588.32, 150162.09, 155877.37, 146715.17, 146329.55, 146329.54, 146329.59, 141371.57, 136802.48, 127607.86, 124929.97, 124929.95, 124929.94, 124637.08, 126226.18, 126682.95, 120038.42, 119589.34, 119589.26, 119589.19, 128599.07, 129174.71, 133984.18, 133984.11, 136185.81, 136185.75, 136185.7, 136485.86, 133154.38, 136297.47, 140792.52, 138984.12, 138984.12, 140749.21, 140665.72, 138928.1, 139491.22, 132281.27, 132281.22, 126455.75, 127075.06, 122043.18, 135004.29, 135004.37, 135004.4, 139307.98, 138297.41, 138861.56, 138861.55, 135899.49, 135899.41, 135899.37, 134045.43, 133632.69, 132548.81, 132548.9, 139257.15, 139257.1, 139257.06, 141827.31, 145984.58, 145572.71, 145761.75, 146374.91, 146375.01, 146374.72, 149929.04, 151368.56, 150372.4, 152044.84, 152319.94, 152319.98, 152319.98, 152317.98, 149529.83, 149121.28, 149434.39, 146144.22, 146144.23, 146144.33, 142077.69, 146870.98, 148701.97, 146306.11, 141900.67, 141900.84, 141901.02, 143706.88, 144343.42, 136205.74, 131976.97, 142737.12, 142737.17, 142737.12, 147688.65, 144885.04, 144156.79, 140944.88, 141772.53, 141772.5, 141772.47, 141772.5, 141270.94, 143087.46, 145431.32, 146923.06, 146923.11, 146923.2, 145464.72, 149805.12, 154248.82, 150994.13, 150007.76, 150007.9, 150007.99, 157731.6, 150344.34, 151889.95, 149365.24, 141387.97, 141387.87, 141387.79, 151065.51, 155996.07, 158408.61, 152227.21, 151551.99, 151551.66, 151551.32, 154102.1, 152751.44, 154967.22, 161805.91, 154048.66, 154049.03, 154049.44, 160034.86, 165146.6, 166502.19, 155437.41, 153817.79, 153817.95, 153818.17, 145787.98, 153862.5, 155414.74, 162243.77, 162243.88, 162244.01, 162244.19, 161286.31, 164130.14, 175549.36, 179566.74, 184964.99, 184964.85, 184964.68, 188560.47, 189743.55, 189467.85, 197025.21, 199934.26, 199934.46, 199934.68, 202433.55, 200355.52, 205657.67, 202452.95, 208954.73, 208954.56, 208954.35, 203893.18, 198358.55, 201582.61, 208117.07, 213543.9, 213544.07, 213544.29, 213806.28, 218706.87, 222675.53, 216760.19, 222007.25, 222007.33, 222007.39, 232099.48, 227310.52, 235003.89, 236094.6, 230225.06, 230225.0, 230224.89, 222327.24, 221628.61, 224761.63, 232225.47, 235192.07, 235191.83, 235191.58, 235196.54, 238186.65, 236213.92, 235209.31, 232067.65, 232067.58, 232067.49, 237094.01, 245614.21, 243061.61, 244326.49, 228019.44, 228019.63, 228019.85, 233102.63, 226095.01, 223959.2, 232366.36, 235341.33, 235341.58, 235341.87, 244890.93, 236416.73, 236626.15, 241289.23, 241305.85, 241306.02, 241306.22],
-      borderColor:'#2563eb',
-      backgroundColor:'rgba(37,99,235,0.08)',
-      fill:true,
-      tension:0.2,
-      pointRadius:0,
-      borderWidth:2,
-    }]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2})}}},
-    scales:{
-      x:{ticks:{color:'#8899aa',maxTicksLimit:12,font:{size:11}},grid:{color:'#253a48'}},
-      y:{ticks:{color:'#8899aa',font:{size:11},callback:v=>'$'+v.toLocaleString()},grid:{color:'#253a48'}}
-    }
-  }
+const MENTIONS = [{"symbol": "SIVE", "count": 14, "total_score": 10.391, "weight": 15.5, "price": 96.0}, {"symbol": "AAOI", "count": 11, "total_score": 5.888, "weight": 5.5, "price": 161.85}, {"symbol": "NVDA", "count": 11, "total_score": 7.941, "weight": 8.0, "price": 210.69}, {"symbol": "LITE", "count": 9, "total_score": 6.151, "weight": 5.7, "price": 850.0}, {"symbol": "MU", "count": 6, "total_score": 3.385, "weight": 0.9, "price": 1133.99}, {"symbol": "XFAB", "count": 6, "total_score": 3.403, "weight": 3.4, "price": 9.2}, {"symbol": "AEHR", "count": 5, "total_score": 1.947, "weight": 1.3, "price": 115.3}, {"symbol": "AMD", "count": 5, "total_score": 2.727, "weight": 2.4, "price": 537.37}, {"symbol": "AXTI", "count": 5, "total_score": 0.954, "weight": 1.6, "price": 84.57}, {"symbol": "INTC", "count": 5, "total_score": 1.865, "weight": 2.3, "price": 133.99}, {"symbol": "IQE", "count": 5, "total_score": 3.553, "weight": 2.4, "price": 50.8}, {"symbol": "RDDT", "count": 5, "total_score": 0.774, "weight": 0.7, "price": 174.96}, {"symbol": "SNDK", "count": 5, "total_score": 0.499, "weight": 1.1, "price": 2184.75}, {"symbol": "SPCX", "count": 5, "total_score": 1.651, "weight": 0.7, "price": 185.0}, {"symbol": "EWY", "count": 4, "total_score": 2.882, "weight": 1.0, "price": 219.2}, {"symbol": "NBIS", "count": 4, "total_score": 2.867, "weight": 2.6, "price": 286.69}, {"symbol": "ACMR", "count": 3, "total_score": 1.615, "weight": 0.4, "price": 109.87}, {"symbol": "JBL", "count": 3, "total_score": 1.583, "weight": 3.5, "price": 371.88}, {"symbol": "MSFT", "count": 3, "total_score": 2.01, "weight": 1.0, "price": 379.4}, {"symbol": "POET", "count": 3, "total_score": 0.614, "weight": 1.3, "price": 12.15}, {"symbol": "TSEM", "count": 3, "total_score": 1.81, "weight": 2.1, "price": 286.74}, {"symbol": "WOLF", "count": 3, "total_score": 1.661, "weight": 0.6, "price": 57.41}, {"symbol": "AAPL", "count": 2, "total_score": 1.702, "weight": 1.4, "price": 298.01}, {"symbol": "ASML", "count": 2, "total_score": 0.404, "weight": 0.2, "price": 1929.68}, {"symbol": "COHR", "count": 2, "total_score": 1.779, "weight": 2.0, "price": 389.57}, {"symbol": "IREN", "count": 2, "total_score": 1.596, "weight": 0.1, "price": 59.96}, {"symbol": "META", "count": 2, "total_score": 1.434, "weight": 0.9, "price": 577.22}, {"symbol": "MRVL", "count": 2, "total_score": 1.123, "weight": 3.5, "price": 310.58}, {"symbol": "MTSI", "count": 2, "total_score": 0.927, "weight": 1.0, "price": 391.41}, {"symbol": "XLU", "count": 2, "total_score": 0.533, "weight": 0.2, "price": 44.76}, {"symbol": "AEVA", "count": 1, "total_score": 0.962, "weight": 0.6, "price": 24.39}, {"symbol": "AIXA", "count": 1, "total_score": 0.764, "weight": 0.3, "price": 59.84}, {"symbol": "AMZN", "count": 1, "total_score": 0.477, "weight": 1.1, "price": 244.39}, {"symbol": "AOSL", "count": 1, "total_score": 0.433, "weight": 0.1, "price": 48.04}, {"symbol": "ARM", "count": 1, "total_score": 0.621, "weight": 1.1, "price": 439.46}, {"symbol": "CAMT", "count": 1, "total_score": 0.7, "weight": 0.2, "price": 195.16}, {"symbol": "CRM", "count": 1, "total_score": 0.813, "weight": 0.3, "price": 151.78}, {"symbol": "GFS", "count": 1, "total_score": 0.7, "weight": 2.4, "price": 85.83}, {"symbol": "GOOGL", "count": 1, "total_score": 0.961, "weight": 1.2, "price": 368.03}, {"symbol": "HPS.A", "count": 1, "total_score": 0.621, "weight": 0, "price": null}, {"symbol": "MXL", "count": 1, "total_score": 0.714, "weight": 0.2, "price": 88.76}, {"symbol": "NVTS", "count": 1, "total_score": 0.433, "weight": 0.8, "price": 24.02}, {"symbol": "ON", "count": 1, "total_score": 0.433, "weight": 0.2, "price": 121.62}, {"symbol": "POWI", "count": 1, "total_score": 0.433, "weight": 0.5, "price": 87.11}, {"symbol": "SIMO", "count": 1, "total_score": 0.621, "weight": 0.3, "price": 321.66}, {"symbol": "SIVEF", "count": 1, "total_score": 0.711, "weight": 0.3, "price": 10.12}, {"symbol": "SNAP", "count": 1, "total_score": 0.621, "weight": 0.3, "price": 4.66}, {"symbol": "TTD", "count": 1, "total_score": 0.621, "weight": 0.2, "price": 18.51}, {"symbol": "VRT", "count": 1, "total_score": 0.961, "weight": 0.3, "price": 333.05}, {"symbol": "VSH", "count": 1, "total_score": -0.385, "weight": 0, "price": null}];
+
+let html = '';
+for (const r of MENTIONS) {
+  const tag = r.total_score > 0.5 ? 'bullish' : (r.total_score < -0.3 ? 'bearish' : 'neutral');
+  html += '<tr><td><strong>'+r.symbol+'</strong></td><td>'+r.count+'次</td>'+
+    '<td><span class="tag '+tag+'">'+(r.total_score>=0?'+':'')+r.total_score.toFixed(3)+'</span></td>'+
+    '<td>'+r.weight+'%</td><td>'+(r.price?'$'+r.price.toFixed(2):'-')+'</td></tr>';
+}
+document.getElementById('mb').innerHTML = html;
+
+const tt = TH[curTheme];
+function mkScale() { return {x:{ticks:{color:tt.t},grid:{color:tt.g}},y:{ticks:{color:tt.t},grid:{color:tt.g}}} }
+
+const eqChart = new Chart(document.getElementById('eqChart'), {
+  type:'line',data:{labels:["2025-07-03", "2025-07-07", "2025-07-21", "2025-07-23", "2025-07-28", "2025-07-31", "2025-08-06", "2025-08-23", "2025-08-25", "2025-08-26", "2025-08-31", "2025-09-03", "2025-09-05", "2025-09-08", "2025-09-09", "2025-09-10", "2025-09-11", "2025-09-12", "2025-09-14", "2025-09-15", "2025-09-16", "2025-09-17", "2025-09-18", "2025-09-19", "2025-09-20", "2025-09-21", "2025-09-22", "2025-09-23", "2025-09-24", "2025-09-25", "2025-09-26", "2025-09-27", "2025-09-28", "2025-09-29", "2025-09-30", "2025-10-01", "2025-10-02", "2025-10-03", "2025-10-04", "2025-10-05", "2025-10-06", "2025-10-07", "2025-10-08", "2025-10-09", "2025-10-10", "2025-10-11", "2025-10-12", "2025-10-13", "2025-10-14", "2025-10-15", "2025-10-16", "2025-10-17", "2025-10-18", "2025-10-19", "2025-10-20", "2025-10-21", "2025-10-22", "2025-10-23", "2025-10-24", "2025-10-25", "2025-10-26", "2025-10-27", "2025-10-28", "2025-10-29", "2025-10-30", "2025-10-31", "2025-11-01", "2025-11-02", "2025-11-03", "2025-11-04", "2025-11-05", "2025-11-06", "2025-11-07", "2025-11-08", "2025-11-09", "2025-11-11", "2025-11-12", "2025-11-13", "2025-11-14", "2025-11-15", "2025-11-16", "2025-11-17", "2025-11-18", "2025-11-19", "2025-11-20", "2025-11-21", "2025-11-22", "2025-11-23", "2025-11-24", "2025-11-25", "2025-11-26", "2025-11-27", "2025-11-28", "2025-11-29", "2025-11-30", "2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05", "2025-12-06", "2025-12-08", "2025-12-09", "2025-12-10", "2025-12-11", "2025-12-12", "2025-12-14", "2025-12-15", "2025-12-16", "2025-12-17", "2025-12-19", "2025-12-20", "2025-12-21", "2025-12-22", "2025-12-23", "2025-12-24", "2025-12-25", "2025-12-26", "2025-12-27", "2025-12-28", "2025-12-29", "2025-12-30", "2025-12-31", "2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-25", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-07", "2026-02-08", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-02-28", "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-14", "2026-03-15", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-28", "2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-11", "2026-04-12", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-18", "2026-04-19", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-17", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24", "2026-05-25", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-05-30", "2026-05-31", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-20", "2026-06-21"],datasets:[{label:'净值',data:[100000.0, 98251.65, 104269.79, 105074.29, 104479.01, 105152.43, 106911.62, 112072.58, 111237.76, 112133.43, 112029.88, 111974.1, 111920.3, 114232.12, 121272.47, 125196.12, 124858.1, 126364.52, 126364.51, 128091.42, 126546.98, 128820.75, 131906.36, 134838.82, 134838.84, 134838.85, 138536.7, 137806.12, 139095.55, 136311.15, 135360.74, 135360.74, 135360.74, 139257.17, 140048.41, 141773.93, 146953.12, 148363.86, 148363.89, 148363.91, 151604.64, 151093.31, 156052.17, 159389.0, 152037.21, 152037.2, 152037.14, 160585.2, 160168.35, 162574.58, 156442.57, 152300.64, 152300.72, 152300.8, 153044.55, 149026.6, 142713.86, 147634.32, 156257.61, 156257.66, 156257.7, 160041.07, 158472.38, 158986.39, 154981.84, 159353.04, 159352.96, 159352.84, 159916.84, 152310.24, 158204.49, 148778.01, 148380.17, 148380.2, 148380.15, 143269.05, 138564.4, 129089.55, 126333.64, 126333.66, 126333.74, 126033.56, 127669.16, 128137.83, 121330.19, 120872.23, 120872.21, 120872.2, 130100.03, 130689.97, 135607.02, 135607.05, 137862.46, 137862.45, 137862.38, 138168.1, 134759.15, 137966.94, 142557.51, 140710.65, 140710.69, 142508.51, 142422.66, 140650.4, 141226.51, 133881.06, 133881.06, 127959.16, 128587.18, 123463.26, 136654.4, 136654.34, 136654.35, 141026.91, 140000.26, 140573.19, 140573.14, 137562.47, 137562.47, 137562.48, 135673.62, 135247.61, 134130.43, 134130.43, 141035.98, 141036.0, 141035.99, 143706.35, 148039.77, 147609.18, 147799.73, 148437.57, 148437.63, 148437.6, 152140.31, 153642.72, 152598.24, 154336.91, 154620.64, 154620.7, 154620.66, 154660.43, 151708.32, 151264.68, 151598.12, 148184.71, 148184.63, 148184.56, 143968.78, 148928.39, 150817.01, 148319.9, 143782.39, 143782.35, 143782.29, 145658.02, 146311.34, 137905.13, 133547.82, 144684.55, 144684.41, 144684.24, 149785.01, 146921.14, 146183.43, 142878.07, 143738.03, 143738.02, 143738.05, 143739.02, 143224.93, 145147.36, 147668.74, 149289.92, 149289.76, 149289.57, 147738.22, 152390.43, 157201.71, 154926.02, 153610.21, 153610.39, 153610.56, 163585.55, 155797.63, 157707.07, 153576.78, 144557.97, 144557.78, 144557.55, 154511.32, 160754.1, 163705.11, 156682.51, 156088.04, 156087.95, 156087.76, 158827.59, 156934.86, 161473.42, 169501.64, 159362.89, 159362.73, 159362.55, 169353.68, 176679.55, 181192.26, 164955.47, 161091.57, 161091.51, 161091.5, 152040.36, 162084.18, 164583.04, 170274.64, 170274.83, 170275.0, 170274.58, 169219.73, 172331.53, 189010.82, 193118.42, 203080.28, 203080.2, 203080.12, 213109.69, 213271.29, 219910.35, 231871.84, 235728.84, 235729.01, 235729.19, 247575.75, 248232.87, 252021.97, 244421.11, 256209.55, 256209.73, 256209.94, 247445.39, 241160.44, 253057.26, 261078.95, 268148.93, 268149.2, 268149.5, 285987.82, 293997.08, 293941.06, 286805.18, 289572.53, 289572.51, 289572.44, 310832.91, 296902.06, 321692.83, 323291.55, 312930.2, 312930.15, 312930.09, 293590.49, 288960.75, 302695.26, 318652.47, 335694.73, 335694.5, 335694.25, 345417.27, 352754.96, 339534.83, 334733.77, 328418.24, 328418.25, 328418.2, 329651.92, 379321.5, 371373.72, 367738.5, 333488.69, 333488.51, 333488.37, 350265.85, 327772.11, 322717.43, 340811.17, 355604.29, 355604.45, 355604.65, 368636.99, 358429.82, 364690.54, 368597.72, 367771.97, 367771.84, 367771.7],borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',fill:true,tension:0.2,pointRadius:0,borderWidth:2}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+ctx.parsed.y.toLocaleString()}}},scales:mkScale()}
 });
 
-const hData = {"SIVE": 0.1416, "NVDA": 0.0725, "LITE": 0.0519, "AAOI": 0.0499, "MRVL": 0.0318, "JBL": 0.0315, "XFAB": 0.0306, "SOI": 0.0296, "LPK": 0.0261, "NBIS": 0.0233, "GFS": 0.0222, "AMD": 0.0217, "IQE": 0.0214, "INTC": 0.0208, "TSEM": 0.0188, "COHR": 0.018, "AXTI": 0.0146, "RPI": 0.014, "TSM": 0.0138, "ALRIB": 0.0136};
-const hLabels = Object.keys(hData);
-const hValues = Object.values(hData).map(v => +(v*100).toFixed(2));
-new Chart(document.getElementById('holdingsChart'), {
+const hData = {"SIVE": 0.1554, "NVDA": 0.0796, "LITE": 0.057, "AAOI": 0.0548, "MRVL": 0.0349, "JBL": 0.0346, "XFAB": 0.0336, "NBIS": 0.0256, "GFS": 0.0244, "AMD": 0.0238, "IQE": 0.0235, "INTC": 0.0228, "TSEM": 0.0206, "COHR": 0.0197, "AXTI": 0.0161, "TSM": 0.0151, "AAPL": 0.0136, "POET": 0.0131, "AEHR": 0.0126, "GOOGL": 0.0119, "AMZN": 0.0113, "ARM": 0.011, "SNDK": 0.0109, "EWY": 0.0103, "NOK": 0.0103, "MSFT": 0.01, "MTSI": 0.0096, "RKLB": 0.0095, "MU": 0.0093, "META": 0.0091, "AVGO": 0.0087, "NVTS": 0.0076, "SPCX": 0.0074, "RDDT": 0.007, "AEVA": 0.0064, "WOLF": 0.0063, "HOOD": 0.0055, "POWI": 0.0049, "ACMR": 0.0045, "YSS": 0.0043, "BLK": 0.0042, "ALAB": 0.0041, "TSLA": 0.0041, "ASX": 0.0041, "WYFI": 0.0037, "GS": 0.0037, "VPG": 0.0036, "CIFR": 0.0031, "CRM": 0.0031, "SIVEF": 0.003, "SNAP": 0.0028, "SIMO": 0.0028, "AIXA": 0.0028, "VRT": 0.0026, "FN": 0.0026, "XLU": 0.0025, "CAMT": 0.0024, "CRCL": 0.0023, "ON": 0.0023, "VICR": 0.0022, "MXL": 0.0022, "ASML": 0.002, "AMKR": 0.0019, "ONTO": 0.0019, "HUT": 0.0018, "WULF": 0.0018, "FLNC": 0.0018, "NFLX": 0.0018, "TTD": 0.0018, "KLAC": 0.0015, "CLS": 0.0014, "LRCX": 0.0014, "AOSL": 0.0014, "SPCE": 0.0014, "IREN": 0.0013, "RTX": 0.0013, "HIMX": 0.0013, "AMSC": 0.0012, "IBIT": 0.0011, "OSS": 0.0011, "GDRZF": 0.0011, "BESI": 0.001, "ASPI": 0.001, "IONQ": 0.0009, "QBTS": 0.0009, "BRK.B": 0.0009, "SHMD": 0.0009, "DPZ": 0.0009, "GLW": 0.0009, "LWLG": 0.0009, "POWL": 0.0009, "BRK.A": 0.0009, "INHD": 0.0009, "FIG": 0.0008, "RGTI": 0.0008, "NVT": 0.0008, "FORM": 0.0008, "AMAT": 0.0008, "CRWV": 0.0007, "SANM": 0.0007, "IBM": 0.0007, "HIMS": 0.0006, "VECO": 0.0006, "LASR": 0.0006, "PLPC": 0.0006, "ASTS": 0.0005, "EOSE": 0.0005, "CDNS": 0.0005, "KRUS": 0.0005, "RELL": 0.0005, "ENPH": 0.0005, "IFNNY": 0.0005, "LFUS": 0.0005, "BDC": 0.0005, "SEDG": 0.0005, "CWR.L": 0.0005, "HYLN": 0.0005, "FCEL": 0.0005, "IQE.L": 0.0005, "ASYS": 0.0005, "IPWR": 0.0005, "KEYS": 0.0004, "VCX": 0.0004, "DRAM": 0.0004, "NVO": 0.0003, "MP": 0.0003, "SMTC": 0.0003, "STM": 0.0003, "VIAV": 0.0003, "ASGLY": 0.0003, "DSCSY": 0.0003, "SWGAY": 0.0003, "CBRS": 0.0003, "PYPL": 0.0002, "QCOM": 0.0002, "FISV": 0.0002, "JPM": 0.0002, "ALMU": 0.0002, "CODA": 0.0002, "TER": 0.0002, "APH": 0.0002, "ETN": 0.0002, "NEO": 0.0002, "TXN": 0.0002, "TOWCF": 0.0002, "ERIC": 0.0002, "MSTR": 0.0001, "CRDO": 0.0001, "ORCL": 0.0001, "CEG": 0.0001, "RR": 0.0001, "BE": 0.0001, "KRKNF": 0.0001, "UBER": 0.0001, "XPEV": 0.0001, "CSCO": 0.0001, "CVX": 0.0001, "OUST": 0.0001, "LPTH": 0.0001, "MOG.A": 0.0001, "AMBA": 0.0001, "NOVT": 0.0001, "LSCC": 0.0001, "MRAM": 0.0001, "AUR": 0.0001, "NEE": 0.0001, "KLIC": 0.0001, "SLOIF": 0.0001, "UMC": 0.0001, "AXIA": 0.0001, "P": 0.0001, "TRT": 0.0001, "HGRAF": 0.0001, "QURE": 0.0001, "ENVX": 0.0001, "EONR": 0.0001, "MITK": 0.0001, "WATT": 0.0001, "MSR": 0.0001, "ATEYY": 0.0001, "BIRD": 0.0001, "SEIGY": 0.0001, "SNPS": 0.0001, "ATKR": 0.0001, "VMI": 0.0001, "AEIS": 0.0001, "AZZ": 0.0001, "SPXC": 0.0001, "CLF": 0.0001, "NXPI": 0.0001, "SYM": 0.0001, "MBLY": 0.0001, "ARBE": 0.0001, "SERV": 0.0001, "HSYDF": 0.0001, "ZBRA": 0.0001, "BAM": 0.0001, "ALNT": 0.0001, "AMBQ": 0.0001, "ISRG": 0.0001, "HLIT": 0.0001, "HG": 0.0001, "CGNX": 0.0001, "BSL": 0.0001, "CTH.V": 0.0001, "IMSR": 0.0001, "KDK": 0.0001, "MRLN": 0.0001, "KITT": 0.0001, "INDI": 0.0001};
+const hChart = new Chart(document.getElementById('hChart'), {
   type:'doughnut',
-  data:{labels:hLabels,datasets:[{data:hValues,backgroundColor:['#2563eb','#4ade80','#f59e0b','#f87171','#a78bfa','#34d399','#fb923c','#60a5fa','#f472b6','#2dd4bf','#f97316','#8b5cf6','#14b8a6','#e11d48','#06b6d4','#84cc16','#d946ef','#0ea5e9','#22c55e','#eab308'],borderWidth:0}]},
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{
-      legend:{position:'right',labels:{color:'#b0c4d8',font:{size:11},padding:8}},
-      tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toFixed(2)+'%'}}
-    }
-  }
+  data:{labels:Object.keys(hData),datasets:[{data:Object.values(hData).map(v=>+(v*100).toFixed(2)),backgroundColor:['#2563eb','#4ade80','#f59e0b','#f87171','#a78bfa','#34d399','#fb923c','#60a5fa','#f472b6','#2dd4bf'],borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:tt.l,font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed.toFixed(2)+'%'}}}}
 });
 
-new Chart(document.getElementById('topSymbolsChart'), {
+const topChart = new Chart(document.getElementById('topChart'), {
   type:'bar',
-  data:{
-    labels:["SRPT", "OSCR", "MARA", "IBIT", "GOOGL", "ETORO", "NVDA", "NBIS", "CREDO", "CRDO", "RKT", "AMD", "ALAB", "SPOT", "MSFT", "META", "AMZN", "KSPI", "SG", "RKLB"],
-    datasets:[{data:[295, 295, 295, 295, 295, 295, 293, 293, 293, 293, 292, 292, 292, 291, 291, 291, 291, 290, 288, 285],backgroundColor:'#2563eb',borderRadius:6,borderSkipped:false}]
-  },
-  options:{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' 次调仓'}}},
-    scales:{
-      x:{ticks:{color:'#8899aa',font:{size:10}},grid:{display:false}},
-      y:{ticks:{color:'#8899aa',font:{size:11}},grid:{color:'#253a48'}}
-    }
-  }
+  data:{labels:["SRPT", "OSCR", "MARA", "IBIT", "GOOGL", "NVDA", "NBIS", "CRDO", "RKT", "AMD", "ALAB", "SPOT", "MSFT", "META", "AMZN", "KSPI", "SG", "RKLB", "BMBL", "HUT"],datasets:[{data:[295, 295, 295, 295, 295, 293, 293, 293, 292, 292, 292, 291, 291, 291, 291, 290, 288, 285, 285, 284],backgroundColor:'#2563eb',borderRadius:6,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' 次调仓'}}},scales:{x:{ticks:{color:tt.t,font:{size:10}},grid:{display:false}},y:{ticks:{color:tt.t,font:{size:11}},grid:{color:tt.g}}}}
 });
-</script>
-</body>
-</html>
+</script></body></html>
