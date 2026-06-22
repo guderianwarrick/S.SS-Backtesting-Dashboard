@@ -1,4 +1,4 @@
-# S.SS Backtesting Dashboard
+# S.SS Backtesting Dashboard S100指数看板
 
 基于 Twitter/X 财经博主推文情绪的**虚拟持仓回测看板**。
 
