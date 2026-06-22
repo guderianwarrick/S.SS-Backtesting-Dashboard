@@ -31,9 +31,57 @@ def gen():
         eq_values = [round(r[1], 2) for r in equity_rows]
         
         # 基本统计
-        initial = events[0].portfolio_value if events else 100000
-        final = events[-1].portfolio_value if events else 100000
+        total_events = s.query(func.count(RebalanceEvent.id)).scalar() or 0
+        total_symbols = s.query(RebalanceEvent.symbol).distinct().count()
+        initial = eq_values[0] if eq_values else 100000
+        final = eq_values[-1] if eq_values else 100000
         cr = (final - initial) / initial if initial > 0 else 0
+        
+        # 夏普比率 & 最大回撤（从净值曲线计算）
+        returns = []
+        for i in range(1, len(eq_values)):
+            prev = eq_values[i-1]
+            curr = eq_values[i]
+            if prev > 0:
+                returns.append((curr - prev) / prev)
+        
+        sharpe = 0
+        if len(returns) > 1:
+            avg_r = sum(returns) / len(returns)
+            std_r = (sum((r - avg_r) ** 2 for r in returns) / len(returns)) ** 0.5
+            sharpe = (avg_r / std_r) * (252 ** 0.5) if std_r > 0 else 0
+        
+        max_dd = 0
+        peak = eq_values[0]
+        for v in eq_values:
+            if v > peak:
+                peak = v
+            dd = (peak - v) / peak if peak > 0 else 0
+            if dd > max_dd:
+                max_dd = dd
+        
+        # QQQ 超额收益
+        qqq_path = Path("data/price_cache/QQQ.json")
+        qqq_excess = 0
+        if qqq_path.exists():
+            import json
+            qqq_data = json.loads(qqq_path.read_text())
+            qqq_dates = sorted(qqq_data.keys())
+            if qqq_dates and eq_dates:
+                qqq_start = None
+                qqq_end = None
+                # 找 eq_dates[0] 最近的 QQQ 价格
+                for d in qqq_dates:
+                    if d >= eq_dates[0]:
+                        qqq_start = qqq_data[d].get("c") or qqq_data[d].get("o")
+                        break
+                for d in reversed(qqq_dates):
+                    if d <= eq_dates[-1]:
+                        qqq_end = qqq_data[d].get("c") or qqq_data[d].get("o")
+                        break
+                if qqq_start and qqq_end and qqq_start > 0:
+                    qqq_return = (qqq_end - qqq_start) / qqq_start
+                    qqq_excess = cr - qqq_return
         
         # 最近 7 天提及（从 StockMention 取）
         seven_days_ago = date.today() - timedelta(days=7)
@@ -153,8 +201,11 @@ tr:hover td{{background:var(--card-hover)}}
 <div class="stat-card"><div class="l">初始资金</div><div class="v">$ {initial:,.0f}</div></div>
 <div class="stat-card"><div class="l">最终价值</div><div class="v">$ {final:,.0f}</div></div>
 <div class="stat-card"><div class="l">累计收益</div><div class="v {'g' if cr>=0 else 'r'}">{cr*100:.2f}%</div></div>
-<div class="stat-card"><div class="l">调仓次数</div><div class="v">{len(equity_rows):,}</div></div>
-<div class="stat-card"><div class="l">涉及股票</div><div class="v">{len(hData)}</div></div>
+<div class="stat-card"><div class="l">夏普比率</div><div class="v">{sharpe:.2f}</div></div>
+<div class="stat-card"><div class="l">最大回撤</div><div class="v r">{max_dd*100:.1f}%</div></div>
+<div class="stat-card"><div class="l">vs QQQ 超额</div><div class="v {'g' if qqq_excess>=0 else 'r'}">{qqq_excess*100:+.2f}%</div></div>
+<div class="stat-card"><div class="l">调仓次数</div><div class="v">{total_events:,}</div></div>
+<div class="stat-card"><div class="l">涉及股票</div><div class="v">{total_symbols}</div></div>
 </div>
 
 <div class="chart-box"><h3>📈 组合净值曲线</h3><div class="chart-wrap"><canvas id="eqChart"></canvas></div></div>
