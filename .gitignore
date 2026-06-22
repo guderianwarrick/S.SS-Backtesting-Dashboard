@@ -47,3 +47,25 @@ test_*.py
 
 # Generated analysis
 # *.html  # 移除：需要提交 index.html 给 EdgeOne
+
+# Temp project files
+TASK.md
+pipeline_design.md
+data_cleaning_report.md
+batch_fetch_prices.py
+main.py
+monitor.py
+run_equity_curve.py
+run_minimal.py
+run_pipeline.py
+run_pipeline_audit.py
+run_snapshot.py
+run_warmup_*.py
+import_*.py
+merge_*.py
+normalize_data.py
+plot_timeline*.py
+scrape_*.py
+send_phone_code.py
+backfill_*.py
+scraper/
